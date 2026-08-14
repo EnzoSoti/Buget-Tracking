@@ -32,6 +32,30 @@ const getDayNameStr = (dateStr) => {
 const isSunday = (dateStr) => getDayNameStr(dateStr) === 'Sun';
 const isSaturday = (dateStr) => getDayNameStr(dateStr) === 'Sat';
 
+// Get total paid workdays in a given month (all days except Sundays)
+const getWorkdaysInMonth = (year, month) => {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let workdays = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dayOfWeek = new Date(year, month, d).getDay();
+    if (dayOfWeek !== 0) { // Not Sunday
+      workdays++;
+    }
+  }
+  return workdays;
+};
+
+// Get daily rate based on monthly net salary of 21,000 divided by total paid workdays in that month
+const getDailyRateForDate = (dateStr, monthlySalary = 21000) => {
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const workdays = getWorkdaysInMonth(y, m - 1);
+    return workdays > 0 ? monthlySalary / workdays : 0;
+  } catch (e) {
+    return monthlySalary / 26;
+  }
+};
+
 // Generate array of date strings between start and end date (inclusive)
 const getDateRangeArray = (startStr, endStr) => {
   const dates = [];
@@ -60,7 +84,10 @@ export default function App() {
   const [dailySalaries, setDailySalaries] = useState({});
   const [expenses, setExpenses] = useState([]);
   
-  // Date Range Selection State
+  // Customizable Default Daily Income for Daily Budget Calculator
+  const [defaultDailyIncome, setDefaultDailyIncome] = useState('700');
+  
+  // Date Range Selection State for Cut-off Salary Calculator
   const [cutoffStart, setCutoffStart] = useState('2026-07-11');
   const [cutoffEnd, setCutoffEnd] = useState('2026-07-25');
   
@@ -68,8 +95,8 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [expenseDate, setExpenseDate] = useState(getTodayString());
   
-  // Cut-off Calculator Base Pay
-  const [cutoffBasePay, setCutoffBasePay] = useState('10500'); // ₱10,500 per cut-off
+  // Custom divisor base pay setup
+  const [cutoffBasePay, setCutoffBasePay] = useState('10500');
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   
   // Map of Date -> Attendance Status ('FULL', 'SAT_FULL', 'HALF', 'ABSENT', 'REST_DAY')
@@ -106,6 +133,7 @@ export default function App() {
         if (parsed.attendanceMap) {
           setAttendanceMap(parsed.attendanceMap);
         }
+        if (parsed.defaultDailyIncome) setDefaultDailyIncome(parsed.defaultDailyIncome);
         if (parsed.cutoffBasePay) setCutoffBasePay(parsed.cutoffBasePay);
         if (parsed.cutoffStart) setCutoffStart(parsed.cutoffStart);
         if (parsed.cutoffEnd) setCutoffEnd(parsed.cutoffEnd);
@@ -123,6 +151,7 @@ export default function App() {
         expenses: newExpenses,
         isDark: newIsDark,
         attendanceMap: newAttMap,
+        defaultDailyIncome,
         cutoffBasePay,
         cutoffStart,
         cutoffEnd,
@@ -161,26 +190,42 @@ export default function App() {
     return 'FULL';
   };
 
-  // --- AUTOMATIC SALARY CALCULATION FOR CUT-OFF DATE RANGE ---
+  // --- INDEPENDENT CUT-OFF SALARY CALCULATOR FEATURE ---
   const rangeDates = getDateRangeArray(cutoffStart, cutoffEnd);
-  const baseCutoffPay = parseFloat(cutoffBasePay) || 10500;
-
+  
+  let calculatedCutoffSalary = 0;
   let totalScheduledDays = 0;
   let totalAttendedDays = 0;
 
   rangeDates.forEach(d => {
     const status = getResolvedStatus(d);
-    if (!isSunday(d)) totalScheduledDays += 1.0;
-    if (status === 'FULL' || status === 'SAT_FULL') totalAttendedDays += 1.0;
-    else if (status === 'HALF') totalAttendedDays += 0.5;
-    else if (status === 'ABSENT' || status === 'REST_DAY') totalAttendedDays += 0;
+    const dailyRate = getDailyRateForDate(d, 21000);
+
+    if (!isSunday(d)) {
+      totalScheduledDays += 1.0;
+    }
+
+    let multiplier = 0;
+    if (status === 'FULL' || status === 'SAT_FULL') {
+      multiplier = 1.0;
+      totalAttendedDays += 1.0;
+    } else if (status === 'HALF') {
+      multiplier = 0.5;
+      totalAttendedDays += 0.5;
+    } else if (status === 'ABSENT' || status === 'REST_DAY') {
+      multiplier = 0.0;
+    }
+
+    calculatedCutoffSalary += dailyRate * multiplier;
   });
 
-  const dailyCutoffRate = totalScheduledDays > 0 ? baseCutoffPay / totalScheduledDays : 0;
-  const calculatedCutoffSalary = Math.round(totalAttendedDays * dailyCutoffRate * 100) / 100;
+  calculatedCutoffSalary = Math.round(calculatedCutoffSalary * 100) / 100;
 
-  // Active Salary for selected single date
-  const currentDateSalary = dailySalaries[selectedDate] ?? calculatedCutoffSalary;
+  // --- INDEPENDENT DAILY BUDGET CALCULATOR FEATURE ---
+  // Active daily income: completely customizable by the user per date, defaulting to defaultDailyIncome
+  const currentDateSalary = dailySalaries[selectedDate] !== undefined 
+    ? dailySalaries[selectedDate] 
+    : (parseFloat(defaultDailyIncome) || 700);
 
   // Toggle Attendance status when tapping a date row
   const toggleAttendanceStatus = (dateStr) => {
@@ -194,13 +239,7 @@ export default function App() {
 
     const newAttMap = { ...attendanceMap, [dateStr]: nextStatus };
     setAttendanceMap(newAttMap);
-
-    // Clear custom overrides for dates in range so they calculate live
-    const newDailySalaries = { ...dailySalaries };
-    rangeDates.forEach(d => delete newDailySalaries[d]);
-
-    setDailySalaries(newDailySalaries);
-    saveData(newDailySalaries, expenses, isDark, newAttMap);
+    saveData(dailySalaries, expenses, isDark, newAttMap);
   };
 
   // Add Expense
@@ -317,231 +356,275 @@ export default function App() {
         <View style={styles.topHeader}>
           <View>
             <Text style={[styles.mainTitle, theme.text]}>💰 Budget Tracker</Text>
-            <Text style={[styles.mainSubtitle, theme.subtext]}>Cut-off & Daily Salary Auto-Calculator</Text>
+            <Text style={[styles.mainSubtitle, theme.subtext]}>Independent Cut-off & Daily Budget Calculator</Text>
           </View>
           <TouchableOpacity style={[styles.themePill, theme.card]} onPress={toggleTheme} activeOpacity={0.7}>
             <Text style={styles.themeEmoji}>{isDark ? '☀️ Light' : '🌙 Dark'}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* 📅 SELECT CUT-OFF DATE RANGE CARD */}
-        <View style={[styles.cardContainer, theme.card]}>
-          <View style={styles.cardHeaderFlexRow}>
-            <Text style={[styles.sectionLabel, theme.subtext]}>📅 SELECT CUT-OFF DATE RANGE</Text>
-            <TouchableOpacity style={styles.calcTriggerBtn} onPress={() => setShowAttendanceModal(true)} activeOpacity={0.85}>
-              <Text style={styles.calcTriggerBtnText}>📋 Edit Attendance</Text>
-            </TouchableOpacity>
-          </View>
+        {/* HTML div grid wrapper for reliable sideways desktop columns */}
+        <div className="responsive-row">
+          
+          {/* COLUMN 1 */}
+          <div className="responsive-col">
+            
+            {/* FEATURE 1: 💼 CUT-OFF SALARY CALCULATOR CARD */}
+            <View style={[styles.cardContainer, theme.card]}>
+              <View style={styles.cardHeaderFlexRow}>
+                <Text style={[styles.sectionLabel, theme.text]}>💼 Cut-off Salary Calculator</Text>
+                <TouchableOpacity style={styles.calcTriggerBtn} onPress={() => setShowAttendanceModal(true)} activeOpacity={0.85}>
+                  <Text style={styles.calcTriggerBtnText}>📋 Attendance</Text>
+                </TouchableOpacity>
+              </View>
 
-          {/* From & To Compact Inputs side-by-side */}
-          <View style={styles.twoColumnGrid}>
-            <View style={styles.gridColumn}>
-              <Text style={[styles.fieldTitle, theme.subtext]}>Start Date</Text>
-              <input
-                type="date"
-                className={dateInputClassName}
-                value={cutoffStart}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    setCutoffStart(e.target.value);
-                    saveData(dailySalaries, expenses, isDark, attendanceMap, { cutoffStart: e.target.value });
-                  }
-                }}
-              />
-            </View>
-
-            <View style={styles.gridColumn}>
-              <Text style={[styles.fieldTitle, theme.subtext]}>End Date</Text>
-              <input
-                type="date"
-                className={dateInputClassName}
-                value={cutoffEnd}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    setCutoffEnd(e.target.value);
-                    saveData(dailySalaries, expenses, isDark, attendanceMap, { cutoffEnd: e.target.value });
-                  }
-                }}
-              />
-            </View>
-          </View>
-
-          {/* Computed Salary Banner */}
-          <View style={styles.calcSummaryBox}>
-            <Text style={styles.calcSummaryLabel}>AUTO-CALCULATED CUT-OFF PAY</Text>
-            <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
-            <Text style={styles.calcSummarySub}>
-              Attended {totalAttendedDays} of {totalScheduledDays} Work Days (Base: ₱{cutoffBasePay})
-            </Text>
-          </View>
-        </View>
-
-        {/* View Record Date Selector */}
-        <View style={[styles.cardContainer, theme.card]}>
-          <Text style={[styles.sectionLabel, theme.subtext]}>🔍 VIEW SPECIFIC RECORD DATE</Text>
-          <View style={styles.dateControlRow}>
-            <TouchableOpacity style={[styles.dateNavBtn, theme.btnBg]} onPress={() => changeDateByDays(-1)} activeOpacity={0.7}>
-              <Text style={[styles.dateNavBtnText, theme.text]}>◀ Prev</Text>
-            </TouchableOpacity>
-
-            <View style={{ flex: 2 }}>
-              <input
-                type="date"
-                className={dateInputClassName}
-                value={selectedDate}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    setSelectedDate(e.target.value);
-                    setExpenseDate(e.target.value);
-                  }
-                }}
-              />
-            </View>
-
-            <TouchableOpacity style={[styles.dateNavBtn, theme.btnBg]} onPress={() => changeDateByDays(1)} activeOpacity={0.7}>
-              <Text style={[styles.dateNavBtnText, theme.text]}>Next ▶</Text>
-            </TouchableOpacity>
-          </View>
-
-          {selectedDate !== getTodayString() && (
-            <TouchableOpacity
-              style={styles.todayPill}
-              onPress={() => {
-                const today = getTodayString();
-                setSelectedDate(today);
-                setExpenseDate(today);
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.todayPillText}>Jump to Today ({getTodayString()})</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Primary Remaining Balance Highlight Card */}
-        <View style={[
-          styles.mainBalanceCard,
-          remainingForDate < 0 || spentPctForDate > 90 ? styles.cardDanger :
-          spentPctForDate >= 75 ? styles.cardWarning : styles.cardSuccess
-        ]}>
-          <Text style={styles.balanceTag}>REMAINING BUDGET FOR {selectedDate}</Text>
-          <Text style={styles.balanceBigNumber}>{formatPeso(remainingForDate)}</Text>
-
-          <View style={styles.balanceMiniRow}>
-            <View style={styles.miniStat}>
-              <Text style={styles.miniLabel}>Assigned Salary</Text>
-              <Text style={styles.miniValue}>{formatPeso(currentDateSalary)}</Text>
-            </View>
-            <View style={styles.miniStat}>
-              <Text style={styles.miniLabel}>Spent Today</Text>
-              <Text style={styles.miniValue}>{formatPeso(totalDateExpenses)}</Text>
-            </View>
-          </View>
-
-          {/* Simple Progress Bar */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressLabel}>Spent Ratio ({spentPctForDate}%)</Text>
-              <Text style={styles.progressStatusBadge}>
-                {remainingForDate < 0 || spentPctForDate > 90 ? '🔴 Critical' : spentPctForDate >= 75 ? '🟡 Caution' : '🟢 Healthy'}
-              </Text>
-            </View>
-            <View style={styles.progressBarTrack}>
-              <View style={[styles.progressBarFill, { width: `${Math.min(spentPctForDate, 100)}%` }]} />
-            </View>
-          </View>
-        </View>
-
-        {/* Add Expense Form */}
-        <View style={[styles.cardContainer, theme.card]}>
-          <View style={styles.cardHeaderFlexRow}>
-            <Text style={[styles.sectionLabel, theme.subtext]}>✍️ ADD NEW EXPENSE</Text>
-            <View style={styles.inlineDateWrapper}>
-              <Text style={[styles.inlineDateLabel, theme.subtext]}>For Date:</Text>
-              <input
-                type="date"
-                className={dateInputClassName}
-                style={{ height: '36px', width: '140px', padding: '4px 8px', fontSize: '13px' }}
-                value={expenseDate}
-                onChange={(e) => setExpenseDate(e.target.value)}
-              />
-            </View>
-          </View>
-
-          <View style={styles.formFieldGroup}>
-            <Text style={[styles.fieldTitle, theme.subtext]}>Expense Description</Text>
-            <TextInput
-              style={[styles.textInputFull, theme.btnBg, theme.text]}
-              placeholder="e.g. Groceries, Rice, Internet Bill..."
-              placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-              value={name}
-              onChangeText={setName}
-            />
-          </View>
-
-          <View style={styles.formFieldGroup}>
-            <Text style={[styles.fieldTitle, theme.subtext]}>Amount (₱)</Text>
-            <TextInput
-              style={[styles.textInputFull, theme.btnBg, theme.text]}
-              placeholder="0.00"
-              placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-              keyboardType="numeric"
-              value={amount}
-              onChangeText={setAmount}
-            />
-          </View>
-
-          <TouchableOpacity style={styles.addExpenseBtn} onPress={handleAddExpense} activeOpacity={0.85}>
-            <Text style={styles.addExpenseBtnText}>+ Add Expense to {expenseDate}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Expenses List Card */}
-        <View style={[styles.cardContainer, theme.card]}>
-          <Text style={[styles.sectionLabel, theme.subtext]}>📋 EXPENSE RECORDS FOR {selectedDate}</Text>
-
-          {dateExpenses.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <Text style={{ fontSize: '32px', marginBottom: '8px' }}>🍂</Text>
-              <Text style={[styles.emptyBoxText, theme.subtext]}>No expenses logged for {selectedDate}</Text>
-            </View>
-          ) : (
-            dateExpenses.map(item => (
-              <View key={item.id} style={[styles.expenseRow, theme.btnBg]}>
-                <View style={styles.expenseRowLeft}>
-                  <View style={styles.expenseIconWrapper}>
-                    <Text style={styles.catEmoji}>💸</Text>
-                  </View>
-                  <View style={styles.expenseTextInfo}>
-                    <Text style={[styles.expNameText, theme.text]}>{item.name}</Text>
-                    <Text style={[styles.expDateText, theme.subtext]}>📅 {item.date}</Text>
-                  </View>
+              {/* From & To Compact Inputs side-by-side */}
+              <View style={styles.twoColumnGrid}>
+                <View style={styles.gridColumn}>
+                  <Text style={[styles.fieldTitle, theme.subtext]}>Start Date</Text>
+                  <input
+                    type="date"
+                    className={dateInputClassName}
+                    value={cutoffStart}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setCutoffStart(e.target.value);
+                        saveData(dailySalaries, expenses, isDark, attendanceMap, { cutoffStart: e.target.value });
+                      }
+                    }}
+                  />
                 </View>
 
-                <View style={styles.expenseRowRight}>
-                  <Text style={styles.expAmountText}>-{formatPeso(item.amount)}</Text>
-                  <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconAction} activeOpacity={0.6}>
-                    <Text style={{ fontSize: 16 }}>✏️</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconAction} activeOpacity={0.6}>
-                    <Text style={{ fontSize: 16 }}>🗑️</Text>
-                  </TouchableOpacity>
+                <View style={styles.gridColumn}>
+                  <Text style={[styles.fieldTitle, theme.subtext]}>End Date</Text>
+                  <input
+                    type="date"
+                    className={dateInputClassName}
+                    value={cutoffEnd}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setCutoffEnd(e.target.value);
+                        saveData(dailySalaries, expenses, isDark, attendanceMap, { cutoffEnd: e.target.value });
+                      }
+                    }}
+                  />
                 </View>
               </View>
-            ))
-          )}
 
-          <View style={styles.footerBtnRow}>
-            <TouchableOpacity style={[styles.exportBtn, theme.btnBg]} onPress={handleExportCSV} activeOpacity={0.7}>
-              <Text style={[styles.exportBtnText, theme.text]}>📄 Export CSV</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.clearBtn} onPress={handleClearAll} activeOpacity={0.7}>
-              <Text style={styles.clearBtnText}>Clear All</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+              {/* Computed Salary Banner */}
+              <View style={styles.calcSummaryBox}>
+                <Text style={styles.calcSummaryLabel}>AUTO-CALCULATED PAY FOR RANGE</Text>
+                <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
+                <Text style={styles.calcSummarySub}>
+                  Based on ₱21,000/mo • {totalAttendedDays} of {totalScheduledDays} Work Days
+                </Text>
+              </View>
+            </View>
 
-        <Text style={[styles.pageFooterText, theme.subtext]}>Budget Tracker Pro &bull; Fully Responsive Mobile Design</Text>
+            {/* ADD EXPENSE FORM */}
+            <View style={[styles.cardContainer, theme.card]}>
+              <View style={styles.cardHeaderFlexRow}>
+                <Text style={[styles.sectionLabel, theme.text]}>✍️ Add New Expense</Text>
+              </View>
+
+              <View style={styles.formFieldGroup}>
+                <Text style={[styles.fieldTitle, theme.subtext]}>Date for Expense</Text>
+                <input
+                  type="date"
+                  className={dateInputClassName}
+                  value={expenseDate}
+                  onChange={(e) => setExpenseDate(e.target.value)}
+                />
+              </View>
+
+              <View style={styles.formFieldGroup}>
+                <Text style={[styles.fieldTitle, theme.subtext]}>Expense Description</Text>
+                <TextInput
+                  style={[styles.textInputFull, theme.btnBg, theme.text]}
+                  placeholder="e.g. Groceries, Rice, Internet Bill..."
+                  placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                  value={name}
+                  onChangeText={setName}
+                />
+              </View>
+
+              <View style={styles.formFieldGroup}>
+                <Text style={[styles.fieldTitle, theme.subtext]}>Amount (₱)</Text>
+                <TextInput
+                  style={[styles.textInputFull, theme.btnBg, theme.text]}
+                  placeholder="0.00"
+                  placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                  keyboardType="numeric"
+                  value={amount}
+                  onChangeText={setAmount}
+                />
+              </View>
+
+              <TouchableOpacity style={styles.addExpenseBtn} onPress={handleAddExpense} activeOpacity={0.85}>
+                <Text style={styles.addExpenseBtnText}>+ Add Expense to {expenseDate}</Text>
+              </TouchableOpacity>
+            </View>
+
+          </div>
+
+          {/* COLUMN 2 */}
+          <div className="responsive-col">
+            
+            {/* FEATURE 2: 📊 DAILY EXPENSE CALCULATOR */}
+            <View style={[styles.cardContainer, theme.card]}>
+              <Text style={[styles.sectionLabel, theme.text]}>📊 Daily Budget Calculator</Text>
+              
+              {/* Selected Date navigation inside the calculator */}
+              <View style={styles.dateControlRow}>
+                <TouchableOpacity style={[styles.dateNavBtn, theme.btnBg]} onPress={() => changeDateByDays(-1)} activeOpacity={0.7}>
+                  <Text style={[styles.dateNavBtnText, theme.text]}>◀ Prev</Text>
+                </TouchableOpacity>
+
+                <View style={{ flex: 2 }}>
+                  <input
+                    type="date"
+                    className={dateInputClassName}
+                    value={selectedDate}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setSelectedDate(e.target.value);
+                        setExpenseDate(e.target.value);
+                      }
+                    }}
+                  />
+                </View>
+
+                <TouchableOpacity style={[styles.dateNavBtn, theme.btnBg]} onPress={() => changeDateByDays(1)} activeOpacity={0.7}>
+                  <Text style={[styles.dateNavBtnText, theme.text]}>Next ▶</Text>
+                </TouchableOpacity>
+              </View>
+
+              {selectedDate !== getTodayString() && (
+                <TouchableOpacity
+                  style={styles.todayPill}
+                  onPress={() => {
+                    const today = getTodayString();
+                    setSelectedDate(today);
+                    setExpenseDate(today);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.todayPillText}>Jump to Today ({getTodayString()})</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Combined Remaining Balance details inside Card 2 */}
+              <View style={[
+                styles.mainBalanceCardInner,
+                remainingForDate < 0 || spentPctForDate > 90 ? styles.innerCardDanger :
+                spentPctForDate >= 75 ? styles.innerCardWarning : styles.innerCardSuccess
+              ]}>
+                <Text style={styles.balanceTag}>REMAINING BUDGET FOR {selectedDate}</Text>
+                <Text style={styles.balanceBigNumber}>{formatPeso(remainingForDate)}</Text>
+
+                <View style={styles.balanceMiniRow}>
+                  {/* EDITABLE DAILY INCOME AMOUNT WITH CUSTOM INPUT */}
+                  <View style={styles.miniStatEditable}>
+                    <Text style={styles.miniLabelEditable}>Daily Income (₱) ✏️</Text>
+                    <TextInput
+                      style={styles.editableSalaryInput}
+                      value={dailySalaries[selectedDate] !== undefined ? dailySalaries[selectedDate].toString() : (defaultDailyIncome || '')}
+                      onChangeText={(val) => {
+                        const parsed = parseFloat(val);
+                        const updatedSalaries = { ...dailySalaries };
+                        if (val.trim() === '' || isNaN(parsed)) {
+                          delete updatedSalaries[selectedDate];
+                        } else {
+                          updatedSalaries[selectedDate] = parsed;
+                        }
+                        setDailySalaries(updatedSalaries);
+                        saveData(updatedSalaries, expenses, isDark);
+                      }}
+                      placeholder="0.00"
+                      placeholderTextColor="rgba(255, 255, 255, 0.6)"
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  <View style={styles.miniStat}>
+                    <Text style={styles.miniLabel}>Spent Today</Text>
+                    <Text style={styles.miniValue}>{formatPeso(totalDateExpenses)}</Text>
+                  </View>
+                </View>
+
+                {/* Animated Progress Bar */}
+                <View style={styles.progressContainer}>
+                  <View style={styles.progressHeader}>
+                    <Text style={styles.progressLabel}>Spent Ratio ({spentPctForDate}%)</Text>
+                    <Text style={styles.progressStatusBadge}>
+                      {remainingForDate < 0 || spentPctForDate > 90 ? '🔴 Critical' : spentPctForDate >= 75 ? '🟡 Caution' : '🟢 Healthy'}
+                    </Text>
+                  </View>
+                  <View style={styles.progressBarTrack}>
+                    <div
+                      className="progress-bar-animated"
+                      style={{
+                        height: '100%',
+                        backgroundColor: '#ffffff',
+                        borderRadius: 99,
+                        width: `${Math.min(spentPctForDate, 100)}%`
+                      }}
+                    />
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* EXPENSE RECORDS LIST */}
+            <View style={[styles.cardContainer, theme.card]}>
+              <Text style={[styles.sectionLabel, theme.text]}>📋 Expenses for {selectedDate}</Text>
+
+              {dateExpenses.length === 0 ? (
+                <View style={styles.emptyBox}>
+                  <Text style={{ fontSize: '36px', marginBottom: '6px' }}>🍂</Text>
+                  <Text style={[styles.emptyBoxTitle, theme.text]}>No Expenses Logged</Text>
+                  <Text style={[styles.emptyBoxText, theme.subtext]}>Tap "+ Add Expense" to log your daily purchases.</Text>
+                </View>
+              ) : (
+                dateExpenses.map(item => (
+                  <View key={item.id} style={[styles.expenseRow, theme.btnBg]}>
+                    <View style={styles.expenseRowLeft}>
+                      <View style={styles.expenseIconWrapper}>
+                        <Text style={styles.catEmoji}>💸</Text>
+                      </View>
+                      <View style={styles.expenseTextInfo}>
+                        <Text style={[styles.expNameText, theme.text]}>{item.name}</Text>
+                        <Text style={[styles.expDateText, theme.subtext]}>📅 {item.date}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.expenseRowRight}>
+                      <Text style={styles.expAmountText}>-{formatPeso(item.amount)}</Text>
+                      <TouchableOpacity onPress={() => openEdit(item)} style={[styles.iconAction, theme.btnBg]} activeOpacity={0.6}>
+                        <Text style={{ fontSize: 15 }}>✏️</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleDelete(item.id)} style={[styles.iconAction, theme.btnBg]} activeOpacity={0.6}>
+                        <Text style={{ fontSize: 15 }}>🗑️</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              )}
+
+              <View style={styles.footerBtnRow}>
+                <TouchableOpacity style={styles.exportBtnPrimary} onPress={handleExportCSV} activeOpacity={0.8}>
+                  <Text style={styles.exportBtnPrimaryText}>📄 Export CSV</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.clearBtn} onPress={handleClearAll} activeOpacity={0.7}>
+                  <Text style={styles.clearBtnText}>Clear All</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+          </div>
+
+        </div>
+
+        <Text style={[styles.pageFooterText, theme.subtext]}>Enzo Soti &bull; Budget Tracker Pro</Text>
 
       </ScrollView>
 
@@ -560,31 +643,16 @@ export default function App() {
             <ScrollView contentContainerStyle={{ gap: 14 }} showsVerticalScrollIndicator={false}>
               <View style={[styles.scheduleBanner, theme.btnBg]}>
                 <Text style={[styles.scheduleBannerText, theme.text]}>
-                  💵 Cut-off Schedule Settings:{"\n"}
+                  💵 Monthly Net Base Salary: ₱21,000{"\n"}
                   Saturdays = Halfday (Full Pay 1.0x) | Sundays = Rest Day (0x)
                 </Text>
-              </View>
-
-              {/* Base Pay Input */}
-              <View style={styles.formFieldGroup}>
-                <Text style={[styles.fieldTitle, theme.subtext]}>Base Cut-off Salary (₱)</Text>
-                <TextInput
-                  style={[styles.textInputFull, theme.btnBg, theme.text]}
-                  value={cutoffBasePay}
-                  onChangeText={(val) => {
-                    setCutoffBasePay(val);
-                    saveData(dailySalaries, expenses, isDark, attendanceMap, { cutoffBasePay: val });
-                  }}
-                  keyboardType="numeric"
-                  placeholder="10500"
-                />
               </View>
 
               <Text style={[styles.fieldTitle, theme.subtext, { marginTop: 4 }]}>
                 Daily Cut-off attendance details (Tap row to toggle state)
               </Text>
 
-              {/* Use native ScrollView container for attendance row items to guarantee scrolling reliability */}
+              {/* Native ScrollView for attendance items */}
               <ScrollView style={{ maxHeight: 280 }} contentContainerStyle={{ gap: 8 }} showsVerticalScrollIndicator={true}>
                 {rangeDates.map(dateStr => {
                   const status = getResolvedStatus(dateStr);
@@ -607,10 +675,10 @@ export default function App() {
                         status === 'HALF' ? styles.attHalf : styles.attAbsent
                       ]}>
                         <Text style={styles.attBadgeText}>
-                          {status === 'SAT_FULL' ? '🟢 Sat (Halfday - Full Pay 1.0x)' :
-                           status === 'FULL' ? '🟢 Full Day (1.0x)' :
-                           status === 'HALF' ? '🟡 Half Day (0.5x)' :
-                           status === 'REST_DAY' ? '⚪ Sunday Rest Day (0x)' : '🔴 Absent (0x)'}
+                          {status === 'SAT_FULL' ? '🟢 Sat (Full Pay)' :
+                           status === 'FULL' ? '🟢 Full Day' :
+                           status === 'HALF' ? '🟡 Half Day' :
+                           status === 'REST_DAY' ? '⚪ Sunday Rest' : '🔴 Absent'}
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -619,10 +687,10 @@ export default function App() {
               </ScrollView>
 
               <View style={styles.calcSummaryBox}>
-                <Text style={styles.calcSummaryLabel}>NET CUT-OFF SALARY</Text>
+                <Text style={styles.calcSummaryLabel}>NET CALCULATED PAY FOR RANGE</Text>
                 <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
                 <Text style={styles.calcSummarySub}>
-                  Attended: {totalAttendedDays} of {totalScheduledDays} Work Days
+                  Attended: {totalAttendedDays} of {totalScheduledDays} Paid Work Days
                 </Text>
               </View>
 
@@ -690,7 +758,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    maxWidth: 600,
+    maxWidth: 1200,
     width: '100%',
     alignSelf: 'center',
     gap: 16,
@@ -700,6 +768,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
+    marginBottom: 4,
   },
   mainTitle: {
     fontSize: 26,
@@ -736,9 +807,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   sectionLabel: {
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '800',
-    letterSpacing: 0.8,
+    letterSpacing: -0.3,
   },
   calcTriggerBtn: {
     backgroundColor: '#3b82f6',
@@ -757,15 +828,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 8,
-  },
-  inlineDateWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  inlineDateLabel: {
-    fontSize: 13,
-    fontWeight: '700',
   },
   dateControlRow: {
     flexDirection: 'row',
@@ -802,23 +864,24 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
-  /* Primary Gradient Balance Card */
-  mainBalanceCard: {
-    borderRadius: 24,
-    padding: 24,
-    gap: 16,
+  /* Primary Balance Inner Card */
+  mainBalanceCardInner: {
+    borderRadius: 18,
+    padding: 18,
+    gap: 12,
+    marginTop: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
-  cardSuccess: {
+  innerCardSuccess: {
     backgroundColor: '#059669',
   },
-  cardWarning: {
+  innerCardWarning: {
     backgroundColor: '#d97706',
   },
-  cardDanger: {
+  innerCardDanger: {
     backgroundColor: '#dc2626',
   },
   balanceTag: {
@@ -828,7 +891,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   balanceBigNumber: {
-    fontSize: 38,
+    fontSize: 34,
     fontWeight: '900',
     color: '#ffffff',
     letterSpacing: -1,
@@ -840,19 +903,42 @@ const styles = StyleSheet.create({
   miniStat: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
-    padding: 12,
-    borderRadius: 14,
+    padding: 10,
+    borderRadius: 12,
+  },
+  miniStatEditable: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+    padding: 10,
+    borderRadius: 12,
   },
   miniLabel: {
     fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255, 255, 255, 0.85)',
     fontWeight: '700',
   },
+  miniLabelEditable: {
+    fontSize: 11,
+    color: '#ffffff',
+    fontWeight: '800',
+  },
   miniValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     color: '#ffffff',
     marginTop: 4,
+  },
+  editableSalaryInput: {
+    backgroundColor: 'transparent',
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '900',
+    marginTop: 2,
+    padding: 0,
+    width: '100%',
+    outlineWidth: 0,
   },
   progressContainer: {
     gap: 6,
@@ -881,11 +967,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
     borderRadius: 99,
     overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#ffffff',
-    borderRadius: 99,
   },
 
   /* Forms */
@@ -957,8 +1038,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   attBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 10,
   },
   attFull: { backgroundColor: 'rgba(16, 185, 129, 0.2)' },
@@ -1003,9 +1084,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  emptyBoxTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
   emptyBoxText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
   },
   expenseRow: {
     flexDirection: 'row',
@@ -1015,10 +1101,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
   },
   expenseRowLeft: {
     flexDirection: 'row',
@@ -1061,15 +1143,28 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   iconAction: {
-    padding: 6,
-    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-    borderRadius: 8,
+    padding: 8,
+    borderRadius: 10,
+    borderWidth: 1,
   },
   footerBtnRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 10,
     gap: 10,
+  },
+  exportBtnPrimary: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#3b82f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exportBtnPrimaryText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#ffffff',
   },
   exportBtn: {
     flex: 1,
@@ -1078,10 +1173,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  exportBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
   },
   clearBtn: {
     flex: 1,
