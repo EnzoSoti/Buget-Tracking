@@ -19,13 +19,16 @@ const getTodayString = (d = new Date()) => {
 };
 
 export default function App() {
-  const [salary, setSalary] = useState(11153.80);
-  const [salaryInputVal, setSalaryInputVal] = useState('11153.80');
+  // Map of Date -> Income Amount (e.g. { "2026-08-14": 11153.80 })
+  const [dailySalaries, setDailySalaries] = useState({});
   const [expenses, setExpenses] = useState([]);
   
-  // Date Selection
+  // Date Selection State
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [expenseDate, setExpenseDate] = useState(getTodayString());
+  
+  // Income Input State for currently selected date
+  const [salaryInputVal, setSalaryInputVal] = useState('11153.80');
   
   // Form State
   const [name, setName] = useState('');
@@ -43,12 +46,14 @@ export default function App() {
   // Load Saved Data
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('rn_salary_budget_data');
+      const saved = localStorage.getItem('rn_daily_budget_data');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (typeof parsed.salary === 'number') {
-          setSalary(parsed.salary);
-          setSalaryInputVal(parsed.salary.toString());
+        if (parsed.dailySalaries && typeof parsed.dailySalaries === 'object') {
+          setDailySalaries(parsed.dailySalaries);
+        } else if (typeof parsed.salary === 'number') {
+          // Migration fallback
+          setDailySalaries({ [getTodayString()]: parsed.salary });
         }
         if (Array.isArray(parsed.expenses)) {
           setExpenses(parsed.expenses);
@@ -56,17 +61,27 @@ export default function App() {
         if (typeof parsed.isDark === 'boolean') {
           setIsDark(parsed.isDark);
         }
+      } else {
+        // Default initial salary for today
+        const initialMap = { [getTodayString()]: 11153.80 };
+        setDailySalaries(initialMap);
       }
     } catch (e) {
       console.error(e);
     }
   }, []);
 
+  // Update Salary Input when Selected Date Changes
+  useEffect(() => {
+    const currentInc = dailySalaries[selectedDate] ?? (selectedDate === getTodayString() ? 11153.80 : 0);
+    setSalaryInputVal(currentInc > 0 ? currentInc.toString() : '');
+  }, [selectedDate, dailySalaries]);
+
   // Save Data
-  const saveData = (newSalary, newExpenses, newIsDark) => {
+  const saveData = (newDailySalaries, newExpenses, newIsDark) => {
     try {
-      localStorage.setItem('rn_salary_budget_data', JSON.stringify({
-        salary: newSalary,
+      localStorage.setItem('rn_daily_budget_data', JSON.stringify({
+        dailySalaries: newDailySalaries,
         expenses: newExpenses,
         isDark: newIsDark
       }));
@@ -95,16 +110,21 @@ export default function App() {
     setExpenseDate(newStr);
   };
 
-  // Save Salary
+  // Save Income for Currently Selected Date
   const handleUpdateSalary = () => {
     const val = parseFloat(salaryInputVal);
-    if (!isNaN(val) && val >= 0) {
-      setSalary(val);
-      saveData(val, expenses, isDark);
-    }
+    const validVal = (!isNaN(val) && val >= 0) ? val : 0;
+    
+    const updatedSalaries = {
+      ...dailySalaries,
+      [selectedDate]: validVal
+    };
+
+    setDailySalaries(updatedSalaries);
+    saveData(updatedSalaries, expenses, isDark);
   };
 
-  // Add Expense
+  // Add Expense for Selected Date
   const handleAddExpense = () => {
     const amt = parseFloat(amount);
     if (!name.trim() || isNaN(amt) || amt <= 0) return;
@@ -118,17 +138,17 @@ export default function App() {
 
     const updated = [newItem, ...expenses];
     setExpenses(updated);
-    saveData(salary, updated, isDark);
+    saveData(dailySalaries, updated, isDark);
 
     setName('');
     setAmount('');
   };
 
-  // Delete
+  // Delete Expense
   const handleDelete = (id) => {
     const updated = expenses.filter(exp => exp.id !== id);
     setExpenses(updated);
-    saveData(salary, updated, isDark);
+    saveData(dailySalaries, updated, isDark);
   };
 
   // Open Edit
@@ -157,16 +177,16 @@ export default function App() {
     });
 
     setExpenses(updated);
-    saveData(salary, updated, isDark);
+    saveData(dailySalaries, updated, isDark);
     setEditItem(null);
   };
 
   // Clear All
   const handleClearAll = () => {
     if (expenses.length === 0) return;
-    if (confirm('Clear all recorded expenses?')) {
+    if (confirm(`Clear all recorded expenses?`)) {
       setExpenses([]);
-      saveData(salary, [], isDark);
+      saveData(dailySalaries, [], isDark);
     }
   };
 
@@ -193,15 +213,17 @@ export default function App() {
   const toggleTheme = () => {
     const next = !isDark;
     setIsDark(next);
-    saveData(salary, expenses, next);
+    saveData(dailySalaries, expenses, next);
   };
 
-  // Calculations
+  // Current Selected Date's Income & Expenses
+  const currentDateSalary = dailySalaries[selectedDate] ?? (selectedDate === getTodayString() ? 11153.80 : 0);
   const dateExpenses = expenses.filter(exp => exp.date === selectedDate);
   const totalDateExpenses = dateExpenses.reduce((sum, item) => sum + item.amount, 0);
-  const totalAllExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
-  const remaining = salary - totalAllExpenses;
-  const spentPct = salary > 0 ? Math.min(Math.round((totalAllExpenses / salary) * 100), 999) : 0;
+  
+  // Remaining Balance for Selected Date
+  const remainingForDate = currentDateSalary - totalDateExpenses;
+  const spentPctForDate = currentDateSalary > 0 ? Math.min(Math.round((totalDateExpenses / currentDateSalary) * 100), 999) : 0;
 
   const theme = isDark ? darkTheme : lightTheme;
 
@@ -247,7 +269,7 @@ export default function App() {
         <View style={styles.topHeader}>
           <View>
             <Text style={[styles.mainTitle, theme.text]}>Budget Tracker</Text>
-            <Text style={[styles.mainSubtitle, theme.subtext]}>Salary & Expense Manager</Text>
+            <Text style={[styles.mainSubtitle, theme.subtext]}>Daily Income & Expense Manager</Text>
           </View>
           <TouchableOpacity style={[styles.themePill, theme.card]} onPress={toggleTheme}>
             <Text style={styles.themeEmoji}>{isDark ? '☀️ Light' : '🌙 Dark'}</Text>
@@ -293,22 +315,22 @@ export default function App() {
           )}
         </View>
 
-        {/* Primary Remaining Balance Highlight Card */}
+        {/* Primary Remaining Balance Highlight Card for Selected Date */}
         <View style={[
           styles.mainBalanceCard,
-          remaining < 0 || spentPct > 90 ? styles.cardDanger :
-          spentPct >= 75 ? styles.cardWarning : styles.cardSuccess
+          remainingForDate < 0 || spentPctForDate > 90 ? styles.cardDanger :
+          spentPctForDate >= 75 ? styles.cardWarning : styles.cardSuccess
         ]}>
-          <Text style={styles.balanceTag}>REMAINING BALANCE</Text>
-          <Text style={styles.balanceBigNumber}>{formatPeso(remaining)}</Text>
+          <Text style={styles.balanceTag}>REMAINING BALANCE ({selectedDate})</Text>
+          <Text style={styles.balanceBigNumber}>{formatPeso(remainingForDate)}</Text>
 
           <View style={styles.balanceMiniRow}>
             <View style={styles.miniStat}>
-              <Text style={styles.miniLabel}>Total Salary</Text>
-              <Text style={styles.miniValue}>{formatPeso(salary)}</Text>
+              <Text style={styles.miniLabel}>Income ({selectedDate})</Text>
+              <Text style={styles.miniValue}>{formatPeso(currentDateSalary)}</Text>
             </View>
             <View style={styles.miniStat}>
-              <Text style={styles.miniLabel}>Spent on {selectedDate}</Text>
+              <Text style={styles.miniLabel}>Expenses ({selectedDate})</Text>
               <Text style={styles.miniValue}>{formatPeso(totalDateExpenses)}</Text>
             </View>
           </View>
@@ -316,20 +338,20 @@ export default function App() {
           {/* Simple Progress Bar */}
           <View style={styles.progressContainer}>
             <View style={styles.progressHeader}>
-              <Text style={styles.progressLabel}>Spent Ratio ({spentPct}%)</Text>
+              <Text style={styles.progressLabel}>Spent Ratio ({spentPctForDate}%)</Text>
               <Text style={styles.progressLabel}>
-                {remaining < 0 || spentPct > 90 ? 'Critical' : spentPct >= 75 ? 'Caution' : 'Healthy'}
+                {remainingForDate < 0 || spentPctForDate > 90 ? 'Critical' : spentPctForDate >= 75 ? 'Caution' : 'Healthy'}
               </Text>
             </View>
             <View style={styles.progressBarTrack}>
-              <View style={[styles.progressBarFill, { width: `${Math.min(spentPct, 100)}%` }]} />
+              <View style={[styles.progressBarFill, { width: `${Math.min(spentPctForDate, 100)}%` }]} />
             </View>
           </View>
         </View>
 
-        {/* Salary Input Card */}
+        {/* Income / Salary Input Card FOR THE SELECTED DATE */}
         <View style={[styles.simpleCard, theme.card]}>
-          <Text style={[styles.sectionLabel, theme.subtext]}>SET MONTHLY SALARY</Text>
+          <Text style={[styles.sectionLabel, theme.subtext]}>SET INCOME FOR {selectedDate}</Text>
           <View style={[styles.inputBox, theme.btnBg]}>
             <Text style={styles.pesoSymbol}>₱</Text>
             <TextInput
@@ -337,16 +359,16 @@ export default function App() {
               value={salaryInputVal}
               onChangeText={setSalaryInputVal}
               keyboardType="numeric"
-              placeholder="11153.80"
+              placeholder="0.00"
               placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
             />
             <TouchableOpacity style={styles.actionSaveBtn} onPress={handleUpdateSalary}>
-              <Text style={styles.actionSaveText}>Set Salary</Text>
+              <Text style={styles.actionSaveText}>Save</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Add Expense Form (Minimal: Name + Amount + Date) */}
+        {/* Add Expense Form */}
         <View style={[styles.simpleCard, theme.card]}>
           <View style={styles.cardHeaderFlexRow}>
             <Text style={[styles.sectionLabel, theme.subtext]}>ADD NEW EXPENSE</Text>
@@ -432,7 +454,7 @@ export default function App() {
           </View>
         </View>
 
-        <Text style={[styles.pageFooterText, theme.subtext]}>Salary Budget Tracker &bull; Minimalist & Clean</Text>
+        <Text style={[styles.pageFooterText, theme.subtext]}>Salary Budget Tracker &bull; Per-Date Income Records</Text>
 
       </ScrollView>
 
