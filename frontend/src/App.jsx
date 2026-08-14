@@ -133,6 +133,13 @@ const CheckIcon = (props) => (
   </SvgIcon>
 );
 
+const DollarSignIcon = (props) => (
+  <SvgIcon {...props}>
+    <line x1="12" y1="1" x2="12" y2="23" />
+    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+  </SvgIcon>
+);
+
 const getTodayString = (d = new Date()) => {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -182,6 +189,9 @@ export default function App() {
   const [dailySalaries, setDailySalaries] = useState({});
   const [expenses, setExpenses] = useState([]);
   
+  // Customizable Monthly Net Salary (Default ₱21,000 for any user to customize)
+  const [monthlySalary, setMonthlySalary] = useState('21000');
+  
   // Customizable Default Daily Income for Daily Budget Calculator
   const [defaultDailyIncome, setDefaultDailyIncome] = useState('700');
   
@@ -193,7 +203,7 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [expenseDate, setExpenseDate] = useState(getTodayString());
   
-  // Cut-off Base Pay setup (Default ₱10,500 for semi-monthly cut-off of ₱21,000 monthly)
+  // Cut-off Base Pay setup (Defaults to monthlySalary / 2)
   const [cutoffBasePay, setCutoffBasePay] = useState('10500');
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   
@@ -231,6 +241,7 @@ export default function App() {
         if (parsed.attendanceMap) {
           setAttendanceMap(parsed.attendanceMap);
         }
+        if (parsed.monthlySalary) setMonthlySalary(parsed.monthlySalary);
         if (parsed.defaultDailyIncome) setDefaultDailyIncome(parsed.defaultDailyIncome);
         if (parsed.cutoffBasePay) setCutoffBasePay(parsed.cutoffBasePay);
         if (parsed.cutoffStart) setCutoffStart(parsed.cutoffStart);
@@ -249,6 +260,7 @@ export default function App() {
         expenses: newExpenses,
         isDark: newIsDark,
         attendanceMap: newAttMap,
+        monthlySalary,
         defaultDailyIncome,
         cutoffBasePay,
         cutoffStart,
@@ -258,6 +270,15 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  // Handler to update Monthly Net Salary and auto-update Cut-off Base Pay (Monthly Net / 2)
+  const handleMonthlySalaryChange = (val) => {
+    setMonthlySalary(val);
+    const parsedMonthly = parseFloat(val);
+    const newCutoffBase = !isNaN(parsedMonthly) && parsedMonthly > 0 ? (parsedMonthly / 2).toString() : '10500';
+    setCutoffBasePay(newCutoffBase);
+    saveData(dailySalaries, expenses, isDark, attendanceMap, { monthlySalary: val, cutoffBasePay: newCutoffBase });
   };
 
   // Format Currency
@@ -310,7 +331,7 @@ export default function App() {
     }
   });
 
-  const basePay = parseFloat(cutoffBasePay) || 10500;
+  const basePay = parseFloat(cutoffBasePay) || ((parseFloat(monthlySalary) || 21000) / 2);
   const calculatedCutoffSalary = totalScheduledDays > 0
     ? Math.round((totalAttendedDays / totalScheduledDays) * basePay * 100) / 100
     : 0;
@@ -454,7 +475,7 @@ export default function App() {
             <WalletIcon size={28} color="#3b82f6" />
             <View>
               <Text style={[styles.mainTitle, theme.text]}>Budget Tracker</Text>
-              <Text style={[styles.mainSubtitle, theme.subtext]}>Salary & Expense Management</Text>
+              <Text style={[styles.mainSubtitle, theme.subtext]}>Universal Salary & Expense Calculator</Text>
             </View>
           </View>
           <TouchableOpacity style={[styles.themePill, theme.card]} onPress={toggleTheme} activeOpacity={0.7}>
@@ -468,7 +489,7 @@ export default function App() {
           {/* COLUMN 1 */}
           <div className="responsive-col">
             
-            {/* FEATURE 1: CUT-OFF SALARY CALCULATOR CARD */}
+            {/* FEATURE 1: CUT-OFF SALARY CALCULATOR CARD WITH CUSTOMIZABLE MONTHLY SALARY */}
             <View style={[styles.cardContainer, theme.card]}>
               <View style={styles.cardHeaderFlexRow}>
                 <View style={styles.headerTitleGroup}>
@@ -479,6 +500,18 @@ export default function App() {
                   <CalendarIcon size={15} color="#ffffff" style={{ marginRight: 6 }} />
                   <Text style={styles.calcTriggerBtnText}>Attendance</Text>
                 </TouchableOpacity>
+              </View>
+
+              {/* Customizable Monthly Net Salary Input */}
+              <View style={styles.formFieldGroup}>
+                <Text style={[styles.fieldTitle, theme.subtext]}>Monthly Net Salary (₱)</Text>
+                <TextInput
+                  style={[styles.textInputFull, theme.btnBg, theme.text]}
+                  value={monthlySalary}
+                  onChangeText={handleMonthlySalaryChange}
+                  keyboardType="numeric"
+                  placeholder="e.g. 21000, 30000, 50000..."
+                />
               </View>
 
               {/* From & To Compact Inputs side-by-side */}
@@ -519,7 +552,7 @@ export default function App() {
                 <Text style={styles.calcSummaryLabel}>AUTO-CALCULATED CUT-OFF PAY</Text>
                 <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
                 <Text style={styles.calcSummarySub}>
-                  Base: {formatPeso(basePay)} • Attended {totalAttendedDays} of {totalScheduledDays} Work Days
+                  Base: {formatPeso(basePay)} (₱{parseFloat(monthlySalary) || 21000}/mo) • {totalAttendedDays} of {totalScheduledDays} Work Days
                 </Text>
               </View>
             </View>
@@ -761,9 +794,21 @@ export default function App() {
               <View style={[styles.scheduleBanner, theme.btnBg]}>
                 <Text style={[styles.scheduleBannerText, theme.text]}>
                   Semi-Monthly Cut-off Settings:{"\n"}
-                  Monthly Net: ₱21,000 | Semi-Monthly Base: ₱10,500{"\n"}
+                  Monthly Net: {formatPeso(parseFloat(monthlySalary) || 21000)} | Semi-Monthly Base: {formatPeso(basePay)}{"\n"}
                   Saturdays = Halfday (Full Pay 1.0x) | Sundays = Rest Day (0x)
                 </Text>
+              </View>
+
+              {/* Monthly Net Salary Input in Modal */}
+              <View style={styles.formFieldGroup}>
+                <Text style={[styles.fieldTitle, theme.subtext]}>Monthly Net Salary (₱)</Text>
+                <TextInput
+                  style={[styles.textInputFull, theme.btnBg, theme.text]}
+                  value={monthlySalary}
+                  onChangeText={handleMonthlySalaryChange}
+                  keyboardType="numeric"
+                  placeholder="21000"
+                />
               </View>
 
               {/* Base Cut-off Pay Input */}
