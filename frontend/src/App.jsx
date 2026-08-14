@@ -22,7 +22,6 @@ const CATEGORIES = {
   Others: { label: 'Others', emoji: '💡' }
 };
 
-// Helper: Get YYYY-MM-DD string
 const getTodayString = (d = new Date()) => {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -35,7 +34,7 @@ export default function App() {
   const [salaryInputVal, setSalaryInputVal] = useState('11153.80');
   const [expenses, setExpenses] = useState([]);
   
-  // Date Selection State
+  // Date Selection
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [expenseDate, setExpenseDate] = useState(getTodayString());
   
@@ -45,10 +44,10 @@ export default function App() {
   const [category, setCategory] = useState('Food');
   const [filterCat, setFilterCat] = useState('ALL');
   
-  // Theme State
+  // Theme
   const [isDark, setIsDark] = useState(true);
 
-  // Edit Modal State
+  // Edit Modal
   const [editItem, setEditItem] = useState(null);
   const [editName, setEditName] = useState('');
   const [editAmount, setEditAmount] = useState('');
@@ -100,7 +99,7 @@ export default function App() {
     }).format(num);
   };
 
-  // Date Navigation (Prev Day / Next Day)
+  // Date Nav
   const changeDateByDays = (days) => {
     const parts = selectedDate.split('-');
     const current = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
@@ -110,7 +109,7 @@ export default function App() {
     setExpenseDate(newStr);
   };
 
-  // Update Salary
+  // Save Salary
   const handleUpdateSalary = () => {
     const val = parseFloat(salaryInputVal);
     if (!isNaN(val) && val >= 0) {
@@ -140,20 +139,20 @@ export default function App() {
     setAmount('');
   };
 
-  // Preset Chip Click
+  // Preset Click
   const handlePreset = (presetName, presetCat) => {
     setName(presetName);
     if (presetCat) setCategory(presetCat);
   };
 
-  // Delete Expense
+  // Delete
   const handleDelete = (id) => {
     const updated = expenses.filter(exp => exp.id !== id);
     setExpenses(updated);
     saveData(salary, updated, isDark);
   };
 
-  // Open Edit Modal
+  // Open Edit
   const openEdit = (item) => {
     setEditItem(item);
     setEditName(item.name);
@@ -188,7 +187,7 @@ export default function App() {
   // Clear All
   const handleClearAll = () => {
     if (expenses.length === 0) return;
-    if (confirm('Clear all expenses?')) {
+    if (confirm('Clear all recorded expenses?')) {
       setExpenses([]);
       saveData(salary, [], isDark);
     }
@@ -220,32 +219,27 @@ export default function App() {
     saveData(salary, expenses, next);
   };
 
-  // Filter Expenses by Selected Date
+  // Calculations
   const dateExpenses = expenses.filter(exp => exp.date === selectedDate);
   const totalDateExpenses = dateExpenses.reduce((sum, item) => sum + item.amount, 0);
-
-  // Overall Total Expenses
   const totalAllExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
   const remaining = salary - totalAllExpenses;
   const spentPct = salary > 0 ? Math.min(Math.round((totalAllExpenses / salary) * 100), 999) : 0;
 
-  // Filter Category within selected Date
   const filteredExpenses = filterCat === 'ALL'
     ? dateExpenses
     : dateExpenses.filter(exp => exp.category === filterCat);
 
-  // Dynamic Theme Colors
   const theme = isDark ? darkTheme : lightTheme;
 
-  // Date input inline style for full responsiveness
-  const responsiveDateInputStyle = {
-    flex: '1 1 140px',
+  // Simple Clean Input Styles
+  const dateInputStyle = {
+    flex: '1 1 130px',
     width: '100%',
-    maxWidth: '100%',
     boxSizing: 'border-box',
-    backgroundColor: isDark ? '#0f172a' : '#f8fafc',
+    backgroundColor: isDark ? '#1e293b' : '#ffffff',
     color: isDark ? '#f8fafc' : '#0f172a',
-    border: `1.5px solid ${isDark ? '#334155' : '#cbd5e1'}`,
+    border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
     borderRadius: '10px',
     padding: '10px 12px',
     fontSize: '14px',
@@ -256,12 +250,12 @@ export default function App() {
     cursor: 'pointer'
   };
 
-  const responsiveSelectStyle = {
+  const selectStyle = {
     width: '100%',
     boxSizing: 'border-box',
-    backgroundColor: isDark ? '#0f172a' : '#f8fafc',
+    backgroundColor: isDark ? '#1e293b' : '#ffffff',
     color: isDark ? '#f8fafc' : '#0f172a',
-    border: `1.5px solid ${isDark ? '#334155' : '#cbd5e1'}`,
+    border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
     borderRadius: '10px',
     padding: '10px 12px',
     fontSize: '14px',
@@ -277,31 +271,27 @@ export default function App() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
         {/* Header */}
-        <View style={[styles.card, theme.card, styles.headerRow]}>
-          <View style={styles.brandRow}>
-            <Text style={styles.logoEmoji}>💰</Text>
-            <View style={styles.titleWrapper}>
-              <Text style={[styles.title, theme.text]}>Salary Budget Tracker</Text>
-              <Text style={[styles.subtitle, theme.subtext]}>Super Responsive &bull; React Native</Text>
-            </View>
+        <View style={styles.topHeader}>
+          <View>
+            <Text style={[styles.mainTitle, theme.text]}>Budget Tracker</Text>
+            <Text style={[styles.mainSubtitle, theme.subtext]}>Salary & Expense Manager</Text>
           </View>
-          <TouchableOpacity style={[styles.themeBtn, theme.themeBtn]} onPress={toggleTheme}>
-            <Text style={styles.themeBtnText}>{isDark ? '☀️' : '🌙'}</Text>
+          <TouchableOpacity style={[styles.themePill, theme.card]} onPress={toggleTheme}>
+            <Text style={styles.themeEmoji}>{isDark ? '☀️ Light' : '🌙 Dark'}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Super Responsive Date Selector Card */}
-        <View style={[styles.card, theme.card]}>
-          <Text style={[styles.cardHeader, theme.text]}>📅 Select Date to View Records</Text>
-          
-          <View style={styles.datePickerContainer}>
-            <TouchableOpacity style={[styles.navBtn, theme.inputBg]} onPress={() => changeDateByDays(-1)}>
-              <Text style={[styles.navBtnText, theme.text]}>◀ Prev Day</Text>
+        {/* Simple Date Filter Row */}
+        <View style={[styles.simpleCard, theme.card]}>
+          <Text style={[styles.sectionLabel, theme.subtext]}>SELECT DATE</Text>
+          <View style={styles.dateControlRow}>
+            <TouchableOpacity style={[styles.dateNavBtn, theme.btnBg]} onPress={() => changeDateByDays(-1)}>
+              <Text style={[styles.dateNavBtnText, theme.text]}>◀ Prev</Text>
             </TouchableOpacity>
 
             <input
               type="date"
-              style={responsiveDateInputStyle}
+              style={dateInputStyle}
               value={selectedDate}
               onChange={(e) => {
                 if (e.target.value) {
@@ -311,151 +301,132 @@ export default function App() {
               }}
             />
 
-            <TouchableOpacity style={[styles.navBtn, theme.inputBg]} onPress={() => changeDateByDays(1)}>
-              <Text style={[styles.navBtnText, theme.text]}>Next Day ▶</Text>
+            <TouchableOpacity style={[styles.dateNavBtn, theme.btnBg]} onPress={() => changeDateByDays(1)}>
+              <Text style={[styles.dateNavBtnText, theme.text]}>Next ▶</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.todayQuickRow}>
+          {selectedDate !== getTodayString() && (
             <TouchableOpacity
-              style={[styles.todayChip, selectedDate === getTodayString() ? styles.todayChipActive : theme.inputBg]}
+              style={styles.todayPill}
               onPress={() => {
                 const today = getTodayString();
                 setSelectedDate(today);
                 setExpenseDate(today);
               }}
             >
-              <Text style={selectedDate === getTodayString() ? styles.todayChipTextActive : theme.text}>
-                🗓️ Today ({getTodayString()})
-              </Text>
+              <Text style={styles.todayPillText}>Jump to Today ({getTodayString()})</Text>
             </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Primary Remaining Balance Highlight Card */}
+        <View style={[
+          styles.mainBalanceCard,
+          remaining < 0 || spentPct > 90 ? styles.cardDanger :
+          spentPct >= 75 ? styles.cardWarning : styles.cardSuccess
+        ]}>
+          <Text style={styles.balanceTag}>REMAINING BALANCE</Text>
+          <Text style={styles.balanceBigNumber}>{formatPeso(remaining)}</Text>
+
+          <View style={styles.balanceMiniRow}>
+            <View style={styles.miniStat}>
+              <Text style={styles.miniLabel}>Total Salary</Text>
+              <Text style={styles.miniValue}>{formatPeso(salary)}</Text>
+            </View>
+            <View style={styles.miniStat}>
+              <Text style={styles.miniLabel}>Spent on {selectedDate}</Text>
+              <Text style={styles.miniValue}>{formatPeso(totalDateExpenses)}</Text>
+            </View>
+          </View>
+
+          {/* Simple Progress Bar */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressHeader}>
+              <Text style={styles.progressLabel}>Spent Ratio ({spentPct}%)</Text>
+              <Text style={styles.progressLabel}>
+                {remaining < 0 || spentPct > 90 ? 'Critical' : spentPct >= 75 ? 'Caution' : 'Healthy'}
+              </Text>
+            </View>
+            <View style={styles.progressBarTrack}>
+              <View style={[styles.progressBarFill, { width: `${Math.min(spentPct, 100)}%` }]} />
+            </View>
           </View>
         </View>
 
-        {/* Salary Income Card */}
-        <View style={[styles.card, theme.card]}>
-          <Text style={[styles.cardHeader, theme.text]}>💵 Salary Income</Text>
-          <View style={[styles.inputRow, theme.inputBg]}>
-            <Text style={styles.pesoSign}>₱</Text>
+        {/* Salary Input Card */}
+        <View style={[styles.simpleCard, theme.card]}>
+          <Text style={[styles.sectionLabel, theme.subtext]}>SET MONTHLY SALARY</Text>
+          <View style={[styles.inputBox, theme.btnBg]}>
+            <Text style={styles.pesoSymbol}>₱</Text>
             <TextInput
-              style={[styles.salaryInput, theme.text]}
+              style={[styles.salaryTextInput, theme.text]}
               value={salaryInputVal}
               onChangeText={setSalaryInputVal}
               keyboardType="numeric"
-              placeholder="0.00"
+              placeholder="11153.80"
               placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
             />
-            <TouchableOpacity style={styles.saveBtn} onPress={handleUpdateSalary}>
-              <Text style={styles.saveBtnText}>Save</Text>
+            <TouchableOpacity style={styles.actionSaveBtn} onPress={handleUpdateSalary}>
+              <Text style={styles.actionSaveText}>Set Salary</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Balance & Overview Card */}
-        <View style={[styles.card, theme.card]}>
-          <View style={styles.balGrid}>
-            <View style={[styles.balBox, theme.inputBg]}>
-              <Text style={[styles.balLabel, theme.subtext]}>Total Salary</Text>
-              <Text style={[styles.balValue, theme.text]}>{formatPeso(salary)}</Text>
-            </View>
-            <View style={[styles.balBox, theme.inputBg]}>
-              <Text style={[styles.balLabel, theme.subtext]}>Expenses ({selectedDate})</Text>
-              <Text style={[styles.balValue, styles.redText]}>{formatPeso(totalDateExpenses)}</Text>
-            </View>
-          </View>
+        {/* Add Expense Form */}
+        <View style={[styles.simpleCard, theme.card]}>
+          <Text style={[styles.sectionLabel, theme.subtext]}>ADD NEW EXPENSE</Text>
 
-          {/* Remaining Banner */}
-          <View style={[
-            styles.remainingBox,
-            remaining < 0 || spentPct > 90 ? styles.dangerBox :
-            spentPct >= 75 ? styles.warningBox : styles.greenBox
-          ]}>
-            <Text style={styles.remainingLabel}>REMAINING BALANCE (OVERALL)</Text>
-            <Text style={[
-              styles.remainingValue,
-              remaining < 0 || spentPct > 90 ? styles.redText :
-              spentPct >= 75 ? styles.amberText : styles.greenText
-            ]}>
-              {formatPeso(remaining)}
-            </Text>
-          </View>
-
-          {/* Spent Progress Bar */}
-          <View style={styles.progressRow}>
-            <Text style={[styles.progressText, theme.subtext]}>Spent: {spentPct}%</Text>
-            <Text style={[
-              styles.statusText,
-              remaining < 0 || spentPct > 90 ? styles.redText :
-              spentPct >= 75 ? styles.amberText : styles.greenText
-            ]}>
-              {remaining < 0 || spentPct > 90 ? 'Critical!' : spentPct >= 75 ? 'Warning (75%+)' : 'Healthy'}
-            </Text>
-          </View>
-          <View style={[styles.progressBg, theme.inputBg]}>
-            <View style={[
-              styles.progressFill,
-              { width: `${Math.min(spentPct, 100)}%` },
-              remaining < 0 || spentPct > 90 ? styles.fillRed :
-              spentPct >= 75 ? styles.fillAmber : styles.fillGreen
-            ]} />
-          </View>
-        </View>
-
-        {/* Add Expense Card for Selected Date */}
-        <View style={[styles.card, theme.card]}>
-          <Text style={[styles.cardHeader, theme.text]}>➕ Add Expense for {expenseDate}</Text>
-
-          {/* Date for New Expense */}
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, theme.subtext]}>Expense Date</Text>
+          {/* Date Selector for Expense */}
+          <View style={styles.formFieldGroup}>
+            <Text style={[styles.fieldTitle, theme.subtext]}>Date</Text>
             <input
               type="date"
-              style={responsiveDateInputStyle}
+              style={dateInputStyle}
               value={expenseDate}
               onChange={(e) => setExpenseDate(e.target.value)}
             />
           </View>
 
-          {/* Quick Presets */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetsRow}>
-            <Text style={[styles.presetLabel, theme.subtext]}>Quick Add: </Text>
-            <TouchableOpacity style={[styles.chip, theme.chip]} onPress={() => handlePreset('Rice & Groceries', 'Food')}>
+          {/* Presets */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetsScrollView}>
+            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => handlePreset('Rice & Groceries', 'Food')}>
               <Text style={theme.text}>🍚 Rice</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.chip, theme.chip]} onPress={() => handlePreset('Electric Bill', 'Bills')}>
+            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => handlePreset('Electric Bill', 'Bills')}>
               <Text style={theme.text}>⚡ Electricity</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.chip, theme.chip]} onPress={() => handlePreset('Water Bill', 'Bills')}>
+            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => handlePreset('Water Bill', 'Bills')}>
               <Text style={theme.text}>💧 Water</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.chip, theme.chip]} onPress={() => handlePreset('Internet', 'Bills')}>
+            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => handlePreset('Internet', 'Bills')}>
               <Text style={theme.text}>🌐 Internet</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.chip, theme.chip]} onPress={() => handlePreset('Transpo', 'Transport')}>
+            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => handlePreset('Transpo', 'Transport')}>
               <Text style={theme.text}>🚌 Transpo</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.chip, theme.chip]} onPress={() => handlePreset('Rent', 'Housing')}>
+            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => handlePreset('Rent', 'Housing')}>
               <Text style={theme.text}>🏠 Rent</Text>
             </TouchableOpacity>
           </ScrollView>
 
-          {/* Form Fields */}
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, theme.subtext]}>Expense Description</Text>
+          {/* Inputs */}
+          <View style={styles.formFieldGroup}>
+            <Text style={[styles.fieldTitle, theme.subtext]}>Expense Description</Text>
             <TextInput
-              style={[styles.input, theme.inputBg, theme.text]}
-              placeholder="e.g. Electric Bill, Rice..."
+              style={[styles.textInputFull, theme.btnBg, theme.text]}
+              placeholder="e.g. Rice, Electric Bill..."
               placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
               value={name}
               onChangeText={setName}
             />
           </View>
 
-          <View style={styles.responsiveFormGrid}>
-            <View style={styles.flex1}>
-              <Text style={[styles.fieldLabel, theme.subtext]}>Amount (₱)</Text>
+          <View style={styles.twoColumnGrid}>
+            <View style={styles.gridColumn}>
+              <Text style={[styles.fieldTitle, theme.subtext]}>Amount (₱)</Text>
               <TextInput
-                style={[styles.input, theme.inputBg, theme.text]}
+                style={[styles.textInputFull, theme.btnBg, theme.text]}
                 placeholder="0.00"
                 placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                 keyboardType="numeric"
@@ -464,10 +435,10 @@ export default function App() {
               />
             </View>
 
-            <View style={styles.flex1}>
-              <Text style={[styles.fieldLabel, theme.subtext]}>Category</Text>
+            <View style={styles.gridColumn}>
+              <Text style={[styles.fieldTitle, theme.subtext]}>Category</Text>
               <select
-                style={responsiveSelectStyle}
+                style={selectStyle}
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
@@ -480,23 +451,23 @@ export default function App() {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.addBtn} onPress={handleAddExpense}>
-            <Text style={styles.addBtnText}>➕ Add Expense for {expenseDate}</Text>
+          <TouchableOpacity style={styles.addExpenseBtn} onPress={handleAddExpense}>
+            <Text style={styles.addExpenseBtnText}>+ Add Expense</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Expense Records List for Selected Date */}
-        <View style={[styles.card, theme.card]}>
-          <View style={styles.listHeaderRow}>
-            <Text style={[styles.cardHeader, theme.text]}>📝 Records for {selectedDate}</Text>
+        {/* Expenses List Card */}
+        <View style={[styles.simpleCard, theme.card]}>
+          <View style={styles.listHeaderFlex}>
+            <Text style={[styles.sectionLabel, theme.subtext]}>RECORDS FOR {selectedDate}</Text>
             <select
               style={{
-                backgroundColor: isDark ? '#0f172a' : '#f8fafc',
+                backgroundColor: isDark ? '#1e293b' : '#ffffff',
                 color: isDark ? '#f8fafc' : '#0f172a',
                 border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
                 borderRadius: 8,
                 padding: '6px 10px',
-                fontSize: 13,
+                fontSize: 12,
                 outline: 'none',
                 cursor: 'pointer'
               }}
@@ -513,26 +484,28 @@ export default function App() {
           </View>
 
           {filteredExpenses.length === 0 ? (
-            <Text style={[styles.emptyText, theme.subtext]}>No expenses recorded on {selectedDate}.</Text>
+            <View style={styles.emptyBox}>
+              <Text style={[styles.emptyBoxText, theme.subtext]}>No expenses for {selectedDate}</Text>
+            </View>
           ) : (
             filteredExpenses.map(item => {
               const catInfo = CATEGORIES[item.category] || CATEGORIES.Others;
               return (
-                <View key={item.id} style={[styles.itemRow, theme.inputBg]}>
-                  <View style={styles.itemLeft}>
-                    <Text style={styles.itemEmoji}>{catInfo.emoji}</Text>
-                    <View style={styles.itemTextWrapper}>
-                      <Text style={[styles.itemTitle, theme.text]}>{item.name}</Text>
-                      <Text style={[styles.itemSub, theme.subtext]}>{catInfo.label} &bull; 📅 {item.date}</Text>
+                <View key={item.id} style={[styles.expenseRow, theme.btnBg]}>
+                  <View style={styles.expenseRowLeft}>
+                    <Text style={styles.catEmoji}>{catInfo.emoji}</Text>
+                    <View style={styles.expenseTextInfo}>
+                      <Text style={[styles.expNameText, theme.text]}>{item.name}</Text>
+                      <Text style={[styles.expDateText, theme.subtext]}>{catInfo.label} &bull; {item.date}</Text>
                     </View>
                   </View>
 
-                  <View style={styles.itemRight}>
-                    <Text style={styles.itemAmount}>-{formatPeso(item.amount)}</Text>
-                    <TouchableOpacity onPress={() => openEdit(item)} style={styles.actionBtn}>
+                  <View style={styles.expenseRowRight}>
+                    <Text style={styles.expAmountText}>-{formatPeso(item.amount)}</Text>
+                    <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconAction}>
                       <Text style={{ fontSize: 16 }}>✏️</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.actionBtn}>
+                    <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconAction}>
                       <Text style={{ fontSize: 16 }}>🗑️</Text>
                     </TouchableOpacity>
                   </View>
@@ -541,58 +514,57 @@ export default function App() {
             })
           )}
 
-          {/* List Footer Buttons */}
-          <View style={styles.footerRow}>
-            <TouchableOpacity style={[styles.secBtn, theme.inputBg]} onPress={handleExportCSV}>
-              <Text style={[styles.secBtnText, theme.text]}>📄 Export All CSV</Text>
+          <View style={styles.footerBtnRow}>
+            <TouchableOpacity style={[styles.exportBtn, theme.btnBg]} onPress={handleExportCSV}>
+              <Text style={[styles.exportBtnText, theme.text]}>📄 Export CSV</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.dangerBtn} onPress={handleClearAll}>
-              <Text style={styles.dangerBtnText}>🗑️ Clear All</Text>
+            <TouchableOpacity style={styles.clearBtn} onPress={handleClearAll}>
+              <Text style={styles.clearBtnText}>Clear All</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <Text style={[styles.footerText, theme.subtext]}>React Native Budget Tracker &bull; Super Responsive</Text>
+        <Text style={[styles.pageFooterText, theme.subtext]}>Salary Budget Tracker &bull; 100% Mobile Responsive</Text>
 
       </ScrollView>
 
       {/* Edit Modal */}
       <Modal visible={!!editItem} transparent animationType="fade">
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.modalCard, theme.card]}>
-            <View style={styles.modalHeaderRow}>
-              <Text style={[styles.modalTitle, theme.text]}>✏️ Edit Expense Record</Text>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalBox, theme.card]}>
+            <View style={styles.modalTopRow}>
+              <Text style={[styles.modalHeading, theme.text]}>Edit Record</Text>
               <TouchableOpacity onPress={() => setEditItem(null)}>
-                <Text style={[styles.closeX, theme.subtext]}>✕</Text>
+                <Text style={[styles.modalCloseX, theme.subtext]}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={[styles.fieldLabel, theme.subtext]}>Date</Text>
+            <Text style={[styles.fieldTitle, theme.subtext]}>Date</Text>
             <input
               type="date"
-              style={responsiveDateInputStyle}
+              style={dateInputStyle}
               value={editDate}
               onChange={(e) => setEditDate(e.target.value)}
             />
 
-            <Text style={[styles.fieldLabel, theme.subtext]}>Description</Text>
+            <Text style={[styles.fieldTitle, theme.subtext]}>Description</Text>
             <TextInput
-              style={[styles.input, theme.inputBg, theme.text]}
+              style={[styles.textInputFull, theme.btnBg, theme.text]}
               value={editName}
               onChangeText={setEditName}
             />
 
-            <Text style={[styles.fieldLabel, theme.subtext]}>Amount (₱)</Text>
+            <Text style={[styles.fieldTitle, theme.subtext]}>Amount (₱)</Text>
             <TextInput
-              style={[styles.input, theme.inputBg, theme.text]}
+              style={[styles.textInputFull, theme.btnBg, theme.text]}
               value={editAmount}
               onChangeText={setEditAmount}
               keyboardType="numeric"
             />
 
-            <Text style={[styles.fieldLabel, theme.subtext]}>Category</Text>
+            <Text style={[styles.fieldTitle, theme.subtext]}>Category</Text>
             <select
-              style={responsiveSelectStyle}
+              style={selectStyle}
               value={editCategory}
               onChange={(e) => setEditCategory(e.target.value)}
             >
@@ -603,12 +575,12 @@ export default function App() {
               ))}
             </select>
 
-            <View style={styles.modalBtnRow}>
-              <TouchableOpacity style={[styles.secBtn, theme.inputBg]} onPress={() => setEditItem(null)}>
+            <View style={styles.modalActionRow}>
+              <TouchableOpacity style={[styles.exportBtn, theme.btnBg]} onPress={() => setEditItem(null)}>
                 <Text style={theme.text}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.addBtn} onPress={handleSaveEdit}>
-                <Text style={styles.addBtnText}>Save Changes</Text>
+              <TouchableOpacity style={styles.addExpenseBtn} onPress={handleSaveEdit}>
+                <Text style={styles.addExpenseBtnText}>Save Changes</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -618,32 +590,61 @@ export default function App() {
   );
 }
 
-// Ultra Responsive StyleSheet
+// Clean Minimalist Responsive Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   scrollContent: {
     padding: 12,
-    maxWidth: 540,
+    maxWidth: 520,
     width: '100%',
     alignSelf: 'center',
     gap: 12,
   },
-  card: {
-    borderRadius: 14,
+  topHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  mainTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  mainSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  themePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  themeEmoji: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  simpleCard: {
+    borderRadius: 16,
     padding: 16,
     borderWidth: 1,
     gap: 12,
   },
-  datePickerContainer: {
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  dateControlRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 8,
     flexWrap: 'wrap',
   },
-  navBtn: {
+  dateNavBtn: {
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
@@ -652,350 +653,304 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  navBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  todayQuickRow: {
-    marginTop: 4,
-    alignItems: 'center',
-  },
-  todayChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  todayChipActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-  },
-  todayChipTextActive: {
-    color: '#ffffff',
-    fontWeight: '800',
+  dateNavBtnText: {
     fontSize: 13,
+    fontWeight: '700',
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 8,
+  todayPill: {
+    alignSelf: 'center',
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 4,
   },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-    minWidth: 180,
-  },
-  titleWrapper: {
-    flex: 1,
-  },
-  logoEmoji: {
-    fontSize: 32,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  subtitle: {
+  todayPillText: {
+    color: '#ffffff',
     fontSize: 12,
+    fontWeight: '700',
   },
-  themeBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
+
+  /* Primary Balance Card */
+  mainBalanceCard: {
+    borderRadius: 18,
+    padding: 20,
+    gap: 12,
   },
-  themeBtnText: {
-    fontSize: 20,
+  cardSuccess: {
+    backgroundColor: '#065f46',
   },
-  cardHeader: {
-    fontSize: 16,
+  cardWarning: {
+    backgroundColor: '#92400e',
+  },
+  cardDanger: {
+    backgroundColor: '#991b1b',
+  },
+  balanceTag: {
+    fontSize: 11,
     fontWeight: '800',
+    color: 'rgba(255, 255, 255, 0.75)',
+    letterSpacing: 1,
   },
-  fieldGroup: {
+  balanceBigNumber: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#ffffff',
+    letterSpacing: -0.5,
+  },
+  balanceMiniRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+  },
+  miniStat: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    padding: 10,
+    borderRadius: 10,
+  },
+  miniLabel: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontWeight: '700',
+  },
+  miniValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#ffffff',
+    marginTop: 2,
+  },
+  progressContainer: {
+    marginTop: 4,
     gap: 4,
   },
-  inputRow: {
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  progressLabel: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontWeight: '700',
+  },
+  progressBarTrack: {
+    height: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 99,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#ffffff',
+    borderRadius: 99,
+  },
+
+  /* Salary Input */
+  inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 10,
     paddingHorizontal: 12,
     borderWidth: 1,
-    height: 46,
+    height: 48,
   },
-  pesoSign: {
+  pesoSymbol: {
     fontSize: 20,
     fontWeight: '800',
     color: '#10b981',
     marginRight: 6,
   },
-  salaryInput: {
+  salaryTextInput: {
     flex: 1,
     fontSize: 18,
     fontWeight: '800',
     outlineStyle: 'none',
   },
-  saveBtn: {
+  actionSaveBtn: {
     backgroundColor: '#10b981',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
   },
-  saveBtnText: {
+  actionSaveText: {
     color: '#ffffff',
     fontWeight: '800',
-    fontSize: 14,
+    fontSize: 13,
   },
-  balGrid: {
-    flexDirection: 'row',
-    gap: 10,
-    flexWrap: 'wrap',
+
+  /* Forms */
+  formFieldGroup: {
+    gap: 4,
   },
-  balBox: {
-    flex: 1,
-    minWidth: 130,
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  balLabel: {
-    fontSize: 11,
+  fieldTitle: {
+    fontSize: 12,
     fontWeight: '700',
-    textTransform: 'uppercase',
   },
-  balValue: {
-    fontSize: 16,
-    fontWeight: '800',
-    marginTop: 4,
-  },
-  remainingBox: {
-    padding: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 2,
-  },
-  greenBox: {
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
-    borderColor: '#10b981',
-  },
-  warningBox: {
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
-    borderColor: '#f59e0b',
-  },
-  dangerBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
-    borderColor: '#ef4444',
-  },
-  remainingLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#94a3b8',
-  },
-  remainingValue: {
-    fontSize: 26,
-    fontWeight: '900',
-    marginTop: 2,
-  },
-  progressRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  progressText: {
-    fontSize: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  progressBg: {
-    height: 8,
-    borderRadius: 99,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 99,
-  },
-  fillGreen: { backgroundColor: '#10b981' },
-  fillAmber: { backgroundColor: '#f59e0b' },
-  fillRed: { backgroundColor: '#ef4444' },
-  presetsRow: {
+  presetsScrollView: {
     flexDirection: 'row',
     marginVertical: 4,
   },
-  presetLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    alignSelf: 'center',
-    marginRight: 6,
-  },
-  chip: {
+  presetChip: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 20,
-    marginRight: 6,
+    marginRight: 8,
     borderWidth: 1,
   },
-  fieldLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 4,
-  },
-  input: {
+  textInputFull: {
     height: 44,
     borderRadius: 10,
     paddingHorizontal: 12,
     borderWidth: 1,
     fontSize: 14,
     outlineStyle: 'none',
+    width: '100%',
   },
-  responsiveFormGrid: {
+  twoColumnGrid: {
     flexDirection: 'row',
     gap: 10,
     flexWrap: 'wrap',
   },
-  flex1: {
+  gridColumn: {
     flex: 1,
     minWidth: 130,
+    gap: 4,
   },
-  addBtn: {
+  addExpenseBtn: {
     backgroundColor: '#3b82f6',
-    height: 44,
-    borderRadius: 10,
+    height: 46,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 6,
   },
-  addBtnText: {
+  addExpenseBtnText: {
     color: '#ffffff',
     fontWeight: '800',
     fontSize: 15,
   },
-  listHeaderRow: {
+
+  /* Expense List */
+  listHeaderFlex: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 8,
   },
-  emptyText: {
-    textAlign: 'center',
-    paddingVertical: 20,
+  emptyBox: {
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
+  emptyBoxText: {
     fontSize: 14,
   },
-  itemRow: {
+  expenseRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     gap: 8,
     flexWrap: 'wrap',
   },
-  itemLeft: {
+  expenseRowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     flex: 1,
     minWidth: 140,
   },
-  itemTextWrapper: {
+  catEmoji: {
+    fontSize: 24,
+  },
+  expenseTextInfo: {
     flex: 1,
   },
-  itemEmoji: {
-    fontSize: 22,
-  },
-  itemTitle: {
+  expNameText: {
     fontSize: 14,
     fontWeight: '800',
   },
-  itemSub: {
+  expDateText: {
     fontSize: 11,
   },
-  itemRight: {
+  expenseRowRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  itemAmount: {
+  expAmountText: {
     fontSize: 14,
     fontWeight: '800',
     color: '#ef4444',
   },
-  actionBtn: {
+  iconAction: {
     padding: 4,
   },
-  footerRow: {
+  footerBtnRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 8,
-    gap: 8,
   },
-  secBtn: {
+  exportBtn: {
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
   },
-  secBtnText: {
+  exportBtnText: {
     fontSize: 13,
     fontWeight: '700',
   },
-  dangerBtn: {
-    borderWidth: 1,
-    borderColor: '#ef4444',
+  clearBtn: {
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ef4444',
   },
-  dangerBtnText: {
+  clearBtnText: {
     color: '#ef4444',
     fontSize: 13,
     fontWeight: '700',
   },
-  footerText: {
+  pageFooterText: {
     textAlign: 'center',
     fontSize: 12,
-    marginVertical: 10,
+    marginVertical: 8,
   },
-  greenText: { color: '#10b981' },
-  amberText: { color: '#f59e0b' },
-  redText: { color: '#ef4444' },
-  modalBackdrop: {
+
+  /* Modal */
+  modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.75)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
   },
-  modalCard: {
+  modalBox: {
     width: '100%',
     maxWidth: 420,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 20,
     gap: 12,
     borderWidth: 1,
   },
-  modalHeaderRow: {
+  modalTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  modalTitle: {
+  modalHeading: {
     fontSize: 16,
     fontWeight: '800',
   },
-  closeX: {
+  modalCloseX: {
     fontSize: 18,
     fontWeight: '800',
   },
-  modalBtnRow: {
+  modalActionRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 10,
@@ -1003,23 +958,19 @@ const styles = StyleSheet.create({
   }
 });
 
-// Theme Colors
+// Theme Definitions
 const darkTheme = {
   container: { backgroundColor: '#0f172a' },
   card: { backgroundColor: '#1e293b', borderColor: '#334155' },
-  inputBg: { backgroundColor: '#0f172a', borderColor: '#334155' },
+  btnBg: { backgroundColor: '#0f172a', borderColor: '#334155' },
   text: { color: '#f8fafc' },
   subtext: { color: '#94a3b8' },
-  themeBtn: { backgroundColor: '#0f172a', borderColor: '#334155' },
-  chip: { backgroundColor: '#0f172a', borderColor: '#334155' },
 };
 
 const lightTheme = {
   container: { backgroundColor: '#f8fafc' },
-  card: { backgroundColor: '#ffffff', borderColor: '#cbd5e1' },
-  inputBg: { backgroundColor: '#f8fafc', borderColor: '#cbd5e1' },
+  card: { backgroundColor: '#ffffff', borderColor: '#e2e8f0' },
+  btnBg: { backgroundColor: '#f1f5f9', borderColor: '#cbd5e1' },
   text: { color: '#0f172a' },
   subtext: { color: '#64748b' },
-  themeBtn: { backgroundColor: '#f8fafc', borderColor: '#cbd5e1' },
-  chip: { backgroundColor: '#f8fafc', borderColor: '#cbd5e1' },
 };
