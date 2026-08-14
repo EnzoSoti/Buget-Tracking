@@ -179,7 +179,7 @@ export default function App() {
   const dailyCutoffRate = totalScheduledDays > 0 ? baseCutoffPay / totalScheduledDays : 0;
   const calculatedCutoffSalary = Math.round(totalAttendedDays * dailyCutoffRate * 100) / 100;
 
-  // Active Salary for selected single date (falls back to range calculated salary)
+  // Active Salary for selected single date
   const currentDateSalary = dailySalaries[selectedDate] ?? calculatedCutoffSalary;
 
   // Change Range Presets
@@ -321,30 +321,26 @@ export default function App() {
   // Expenses filtering
   const dateExpenses = expenses.filter(exp => exp.date === selectedDate);
   const totalDateExpenses = dateExpenses.reduce((sum, item) => sum + item.amount, 0);
-  
-  // Cut-off total expenses within the date range
-  const cutoffExpenses = expenses.filter(exp => rangeDates.includes(exp.date));
-  const totalCutoffExpenses = cutoffExpenses.reduce((sum, item) => sum + item.amount, 0);
 
-  // Remaining Balance for Selected Single Date & Entire Cut-off
+  // Remaining Balance for Selected Single Date
   const remainingForDate = currentDateSalary - totalDateExpenses;
-  const remainingForCutoff = calculatedCutoffSalary - totalCutoffExpenses;
   const spentPctForDate = currentDateSalary > 0 ? Math.min(Math.round((totalDateExpenses / currentDateSalary) * 100), 999) : 0;
 
   const theme = isDark ? darkTheme : lightTheme;
 
+  // Sleek, compact date input style for From / To date fields
   const rangeDateInputStyle = {
-    flex: '1 1 120px',
     backgroundColor: isDark ? '#0f172a' : '#ffffff',
     color: isDark ? '#f8fafc' : '#0f172a',
     border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
     borderRadius: '8px',
-    padding: '8px 10px',
+    padding: '6px 10px',
     fontSize: '13px',
     fontWeight: 'bold',
     fontFamily: 'inherit',
     outline: 'none',
-    minHeight: '40px',
+    height: '38px',
+    maxHeight: '38px',
     boxSizing: 'border-box',
     cursor: 'pointer',
     width: '100%'
@@ -360,7 +356,8 @@ export default function App() {
     fontWeight: 'bold',
     fontFamily: 'inherit',
     outline: 'none',
-    minHeight: '38px',
+    height: '38px',
+    maxHeight: '38px',
     maxWidth: '180px',
     boxSizing: 'border-box',
     cursor: 'pointer'
@@ -391,7 +388,7 @@ export default function App() {
             </TouchableOpacity>
           </View>
 
-          {/* From & To Date Pickers */}
+          {/* From & To Compact Inputs */}
           <View style={styles.twoColumnGrid}>
             <View style={styles.gridColumn}>
               <Text style={[styles.fieldTitle, theme.subtext]}>From (Start Date)</Text>
@@ -442,7 +439,7 @@ export default function App() {
 
           {/* Computed Salary Banner */}
           <View style={styles.calcSummaryBox}>
-            <Text style={styles.calcSummaryLabel}>AUTO-CALCULATED SALARY FOR {cutoffStart} TO {cutoffEnd}</Text>
+            <Text style={styles.calcSummaryLabel}>AUTO-CALCULATED SALARY ({cutoffStart} TO {cutoffEnd})</Text>
             <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
             <Text style={styles.calcSummarySub}>
               Attended: {totalAttendedDays} of {totalScheduledDays} Work Days (Base: ₱{cutoffBasePay})
@@ -961,11 +958,9 @@ const styles = StyleSheet.create({
   twoColumnGrid: {
     flexDirection: 'row',
     gap: 10,
-    flexWrap: 'wrap',
   },
   gridColumn: {
     flex: 1,
-    minWidth: 130,
     gap: 4,
   },
   addExpenseBtn: {
