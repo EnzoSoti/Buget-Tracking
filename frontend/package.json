@@ -1,13 +1,21 @@
 {
-  "name": "salary-budget-tracker",
+  "name": "salary-budget-tracker-react-native",
+  "private": true,
   "version": "1.0.0",
-  "description": "Mobile-installable single page salary budget tracking application",
-  "main": "index.html",
+  "type": "module",
   "scripts": {
-    "start": "npx -y serve . -l 5000",
-    "dev": "npx -y serve . -l 5000"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "vite"
   },
-  "keywords": ["salary", "budget", "tracker", "pwa", "expenses"],
-  "author": "",
-  "license": "MIT"
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-native-web": "^0.19.10"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.1.0"
+  }
 }
