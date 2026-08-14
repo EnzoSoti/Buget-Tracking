@@ -18,6 +18,27 @@ const getTodayString = (d = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
+// Returns date string + day name (e.g., "Saturday")
+const getDayNameStr = (dateStr) => {
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    return dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+  } catch (e) {
+    return '';
+  }
+};
+
+// Check if a date string is Sunday
+const isSunday = (dateStr) => {
+  return getDayNameStr(dateStr) === 'Sun';
+};
+
+// Check if a date string is Saturday
+const isSaturday = (dateStr) => {
+  return getDayNameStr(dateStr) === 'Sat';
+};
+
 // Generate array of date strings between start and end date (inclusive)
 const getDateRangeArray = (startStr, endStr) => {
   const dates = [];
@@ -58,7 +79,7 @@ export default function App() {
   const [cutoffStart, setCutoffStart] = useState('2026-07-26');
   const [cutoffEnd, setCutoffEnd] = useState('2026-08-10');
   
-  // Map of Date -> Attendance Status ('FULL' = 1.0, 'HALF' = 0.5, 'ABSENT' = 0)
+  // Map of Date -> Attendance Status ('FULL' = 1.0, 'SAT_FULL' = 1.0, 'HALF' = 0.5, 'ABSENT' = 0, 'REST_DAY' = 0)
   const [attendanceMap, setAttendanceMap] = useState({});
   
   // Form State
@@ -83,7 +104,6 @@ export default function App() {
         if (parsed.dailySalaries && typeof parsed.dailySalaries === 'object') {
           setDailySalaries(parsed.dailySalaries);
         } else if (typeof parsed.salary === 'number') {
-          // Migration fallback
           setDailySalaries({ [getTodayString()]: parsed.salary });
         }
         if (Array.isArray(parsed.expenses)) {
@@ -100,7 +120,6 @@ export default function App() {
         if (parsed.cutoffStart) setCutoffStart(parsed.cutoffStart);
         if (parsed.cutoffEnd) setCutoffEnd(parsed.cutoffEnd);
       } else {
-        // Default initial salary for today
         setDailySalaries({ [getTodayString()]: 21000.00 });
       }
     } catch (e) {
@@ -194,7 +213,7 @@ export default function App() {
     saveData(dailySalaries, updated, isDark);
   };
 
-  // Open Edit
+  // Open Edit Modal
   const openEdit = (item) => {
     setEditItem(item);
     setEditName(item.name);
@@ -265,24 +284,34 @@ export default function App() {
   const workDaysCount = parseFloat(workingDaysInMonth) || 22;
   const dailyRate = workDaysCount > 0 ? baseMonthly / workDaysCount : 0;
 
+  // Resolve status for a date (applying Saturday & Sunday default schedule rules)
+  const getResolvedStatus = (dateStr) => {
+    if (attendanceMap[dateStr]) return attendanceMap[dateStr];
+    if (isSunday(dateStr)) return 'REST_DAY';
+    if (isSaturday(dateStr)) return 'SAT_FULL';
+    return 'FULL';
+  };
+
   // Calculate total days worked in range based on attendance
   let totalWorkedDays = 0;
   rangeDates.forEach(d => {
-    const status = attendanceMap[d] || 'FULL';
-    if (status === 'FULL') totalWorkedDays += 1.0;
+    const status = getResolvedStatus(d);
+    if (status === 'FULL' || status === 'SAT_FULL') totalWorkedDays += 1.0;
     else if (status === 'HALF') totalWorkedDays += 0.5;
-    else if (status === 'ABSENT') totalWorkedDays += 0;
+    else if (status === 'ABSENT' || status === 'REST_DAY') totalWorkedDays += 0;
   });
 
   const calculatedCutoffSalary = Math.round(totalWorkedDays * dailyRate * 100) / 100;
 
-  // Toggle Attendance status for a specific date in range
+  // Cycle Attendance status when tapping a date row
   const toggleAttendanceStatus = (dateStr) => {
-    const current = attendanceMap[dateStr] || 'FULL';
+    const current = getResolvedStatus(dateStr);
     let nextStatus = 'FULL';
-    if (current === 'FULL') nextStatus = 'HALF';
+    
+    if (current === 'FULL' || current === 'SAT_FULL') nextStatus = 'HALF';
     else if (current === 'HALF') nextStatus = 'ABSENT';
-    else if (current === 'ABSENT') nextStatus = 'FULL';
+    else if (current === 'ABSENT') nextStatus = 'REST_DAY';
+    else if (current === 'REST_DAY') nextStatus = 'FULL';
 
     const newAttMap = { ...attendanceMap, [dateStr]: nextStatus };
     setAttendanceMap(newAttMap);
@@ -561,6 +590,13 @@ export default function App() {
             </View>
 
             <ScrollView contentContainerStyle={{ gap: 12 }}>
+              {/* Schedule Info Banner */}
+              <View style={[styles.scheduleBanner, theme.btnBg]}>
+                <Text style={[styles.scheduleBannerText, theme.text]}>
+                  📅 Schedule Rule Active: Saturdays = Half day (Full Pay 1.0x) | Sundays = Rest Day (No work 0x)
+                </Text>
+              </View>
+
               {/* Monthly Rate & Days */}
               <View style={styles.twoColumnGrid}>
                 <View style={styles.gridColumn}>
@@ -612,32 +648,35 @@ export default function App() {
                 </View>
               </View>
 
-              {/* Attendance Table (Full day, Half day, Absent) */}
+              {/* Attendance Table */}
               <Text style={[styles.fieldTitle, theme.subtext]}>
-                Custom Attendance per Date (Tap to toggle status)
-              </Text>
-              <Text style={[{ fontSize: 11 }, theme.subtext]}>
-                🟢 Full Day (1.0) &bull; 🟡 Half Day (0.5) &bull; 🔴 Absent (0.0)
+                Daily Cut-off Schedule (Tap row to customize attendance)
               </Text>
 
               <View style={styles.attList}>
                 {rangeDates.map(dateStr => {
-                  const status = attendanceMap[dateStr] || 'FULL';
+                  const status = getResolvedStatus(dateStr);
+                  const dayName = getDayNameStr(dateStr);
                   return (
                     <TouchableOpacity
                       key={dateStr}
                       style={[styles.attRow, theme.btnBg]}
                       onPress={() => toggleAttendanceStatus(dateStr)}
                     >
-                      <Text style={[styles.attDateText, theme.text]}>📅 {dateStr}</Text>
+                      <Text style={[styles.attDateText, theme.text]}>
+                        📅 {dateStr} ({dayName})
+                      </Text>
+                      
                       <View style={[
                         styles.attBadge,
-                        status === 'FULL' ? styles.attFull :
+                        status === 'FULL' || status === 'SAT_FULL' ? styles.attFull :
                         status === 'HALF' ? styles.attHalf : styles.attAbsent
                       ]}>
                         <Text style={styles.attBadgeText}>
-                          {status === 'FULL' ? '🟢 Full Day (1.0x)' :
-                           status === 'HALF' ? '🟡 Half Day (0.5x)' : '🔴 Absent (0x)'}
+                          {status === 'SAT_FULL' ? '🟢 Sat (Halfday - Full Pay 1.0x)' :
+                           status === 'FULL' ? '🟢 Full Day (1.0x)' :
+                           status === 'HALF' ? '🟡 Half Day (0.5x)' :
+                           status === 'REST_DAY' ? '⚪ Sunday Rest Day (0x)' : '🔴 Absent (0x)'}
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -649,7 +688,7 @@ export default function App() {
               <View style={styles.calcSummaryBox}>
                 <Text style={styles.calcSummaryLabel}>CALCULATED CUT-OFF SALARY</Text>
                 <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
-                <Text style={styles.calcSummarySub}>Total Work Days Earned: {totalWorkedDays} days</Text>
+                <Text style={styles.calcSummarySub}>Total Payable Work Days: {totalWorkedDays} days</Text>
               </View>
 
               <TouchableOpacity style={styles.addExpenseBtn} onPress={applyCalculatedSalaryToCurrentDate}>
@@ -975,6 +1014,16 @@ const styles = StyleSheet.create({
   },
 
   /* Attendance Calculator Styles */
+  scheduleBanner: {
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  scheduleBannerText: {
+    fontSize: 11,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
   infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1002,6 +1051,8 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     borderWidth: 1,
+    gap: 8,
+    flexWrap: 'wrap',
   },
   attDateText: {
     fontSize: 13,
