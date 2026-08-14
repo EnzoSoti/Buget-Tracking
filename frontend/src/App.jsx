@@ -133,13 +133,6 @@ const CheckIcon = (props) => (
   </SvgIcon>
 );
 
-const DollarSignIcon = (props) => (
-  <SvgIcon {...props}>
-    <line x1="12" y1="1" x2="12" y2="23" />
-    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-  </SvgIcon>
-);
-
 const getTodayString = (d = new Date()) => {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -309,11 +302,16 @@ export default function App() {
     return 'FULL';
   };
 
-  // --- SEMI-MONTHLY CUT-OFF SALARY CALCULATOR (MATCHING KAMI WORKFORCE) ---
+  // --- DYNAMIC CUT-OFF SALARY CALCULATOR (SCALES DYNAMICALLY WITH DATE RANGE) ---
   const rangeDates = getDateRangeArray(cutoffStart, cutoffEnd);
   
+  let calculatedCutoffSalary = 0;
   let totalScheduledDays = 0;
   let totalAttendedDays = 0;
+
+  const userMonthly = parseFloat(monthlySalary) || 21000;
+  // Standard daily rate for workdays based on 26 workdays per month
+  const dailyWorkRate = userMonthly / 26;
 
   rangeDates.forEach(d => {
     const status = getResolvedStatus(d);
@@ -322,19 +320,21 @@ export default function App() {
       totalScheduledDays += 1.0;
     }
 
+    let multiplier = 0;
     if (status === 'FULL' || status === 'SAT_FULL') {
+      multiplier = 1.0;
       totalAttendedDays += 1.0;
     } else if (status === 'HALF') {
+      multiplier = 0.5;
       totalAttendedDays += 0.5;
     } else if (status === 'ABSENT' || status === 'REST_DAY') {
-      // 0
+      multiplier = 0.0;
     }
+
+    calculatedCutoffSalary += dailyWorkRate * multiplier;
   });
 
-  const basePay = parseFloat(cutoffBasePay) || ((parseFloat(monthlySalary) || 21000) / 2);
-  const calculatedCutoffSalary = totalScheduledDays > 0
-    ? Math.round((totalAttendedDays / totalScheduledDays) * basePay * 100) / 100
-    : 0;
+  calculatedCutoffSalary = Math.round(calculatedCutoffSalary * 100) / 100;
 
   // --- INDEPENDENT DAILY BUDGET CALCULATOR FEATURE ---
   // Active daily income: completely customizable by the user per date, defaulting to defaultDailyIncome
@@ -552,7 +552,7 @@ export default function App() {
                 <Text style={styles.calcSummaryLabel}>AUTO-CALCULATED CUT-OFF PAY</Text>
                 <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
                 <Text style={styles.calcSummarySub}>
-                  Base: {formatPeso(basePay)} (₱{parseFloat(monthlySalary) || 21000}/mo) • {totalAttendedDays} of {totalScheduledDays} Work Days
+                  Base: {formatPeso(userMonthly / 2)} (₱{userMonthly}/mo) • {totalAttendedDays} of {totalScheduledDays} Work Days
                 </Text>
               </View>
             </View>
@@ -794,7 +794,7 @@ export default function App() {
               <View style={[styles.scheduleBanner, theme.btnBg]}>
                 <Text style={[styles.scheduleBannerText, theme.text]}>
                   Semi-Monthly Cut-off Settings:{"\n"}
-                  Monthly Net: {formatPeso(parseFloat(monthlySalary) || 21000)} | Semi-Monthly Base: {formatPeso(basePay)}{"\n"}
+                  Monthly Net: {formatPeso(parseFloat(monthlySalary) || 21000)} | Semi-Monthly Base: {formatPeso(userMonthly / 2)}{"\n"}
                   Saturdays = Halfday (Full Pay 1.0x) | Sundays = Rest Day (0x)
                 </Text>
               </View>
