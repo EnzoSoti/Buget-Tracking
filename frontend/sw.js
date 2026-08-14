@@ -1,13 +1,11 @@
-const CACHE_NAME = 'salary-budget-tracker-v1';
+const CACHE_NAME = 'simple-salary-budget-v2';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './manifest.json',
-  './app_logo.jpg',
-  'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css'
+  './app_logo.jpg'
 ];
 
 self.addEventListener('install', (e) => {

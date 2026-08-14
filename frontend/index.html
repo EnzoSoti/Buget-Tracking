@@ -5,245 +5,189 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Salary Budget Tracker</title>
   
-  <!-- PWA & Mobile Meta Tags -->
-  <meta name="theme-color" content="#0d1117">
+  <!-- PWA & Mobile Settings (No external CDNs - 100% Offline) -->
+  <meta name="theme-color" content="#1e293b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Track your salary, add expenses, and automatically monitor remaining balance.">
+  <meta name="description" content="Simple Salary Budget Tracker - 100% Offline App">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/jpeg" href="app_logo.jpg">
   <link rel="apple-touch-icon" href="app_logo.jpg">
 
-  <!-- Google Fonts & Font Awesome Icons -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
   <div class="app-container">
     
-    <!-- Top Header -->
+    <!-- Simple Clean Header -->
     <header class="app-header">
       <div class="brand">
-        <img src="app_logo.jpg" alt="Logo" class="header-logo">
+        <span class="app-icon-emoji">💰</span>
         <div>
           <h1>Salary Budget Tracker</h1>
-          <p class="subtitle">Smart Personal Budget Manager</p>
+          <p class="subtitle">100% Offline Budget Manager</p>
         </div>
       </div>
       <div class="header-actions">
-        <button id="pwa-install-btn" class="icon-btn install-btn" title="Install App on Phone">
-          <i class="fa-solid fa-download"></i>
-          <span>Install</span>
+        <button id="download-app-btn" class="btn btn-sm btn-primary" title="Download App File for Phone">
+          📥 Download App
         </button>
-        <button id="theme-toggle" class="icon-btn" title="Toggle Theme">
-          <i class="fa-solid fa-moon"></i>
-        </button>
+        <button id="theme-toggle" class="icon-btn" title="Toggle Light/Dark Theme">🌙</button>
       </div>
     </header>
 
-    <!-- Main Content Grid / Column -->
+    <!-- Main Content -->
     <main class="main-content">
       
-      <!-- Salary Input Card -->
-      <section class="card salary-card">
-        <div class="card-header">
-          <h2><i class="fa-solid fa-wallet"></i> Enter Salary Income</h2>
-          <span class="badge">Monthly / Paycheck</span>
-        </div>
-        <div class="salary-input-group">
-          <span class="currency-symbol">₱</span>
+      <!-- Salary Section -->
+      <section class="card">
+        <div class="card-title">💵 Salary Income</div>
+        <div class="salary-input-row">
+          <span class="peso-sign">₱</span>
           <input 
             type="number" 
             id="salary-input" 
-            placeholder="e.g. 11153.80" 
+            placeholder="Enter salary (e.g. 11153.80)" 
             step="0.01" 
             min="0" 
             value="11153.80"
           >
-          <button id="update-salary-btn" class="btn btn-primary">
-            <i class="fa-solid fa-check"></i> Set Salary
-          </button>
+          <button id="update-salary-btn" class="btn btn-success">Save</button>
         </div>
-        <p class="hint"><i class="fa-solid fa-circle-info"></i> Enter your total salary or income available for this period.</p>
       </section>
 
-      <!-- Balance & Overview Summary Card -->
-      <section class="card summary-card" id="summary-section">
-        <div class="summary-grid">
-          
-          <div class="summary-box salary-box">
-            <span class="label">Total Salary</span>
-            <div class="value" id="disp-total-salary">₱11,153.80</div>
+      <!-- Remaining Balance Overview Card -->
+      <section class="card balance-card">
+        <div class="balance-grid">
+          <div class="bal-box">
+            <span class="bal-label">Total Salary</span>
+            <div class="bal-value" id="disp-total-salary">₱11,153.80</div>
           </div>
 
-          <div class="summary-box expenses-box">
-            <span class="label">Total Expenses</span>
-            <div class="value" id="disp-total-expenses">₱0.00</div>
+          <div class="bal-box">
+            <span class="bal-label">Total Expenses</span>
+            <div class="bal-value text-danger" id="disp-total-expenses">₱0.00</div>
           </div>
-
-          <div class="summary-box remaining-box highlight">
-            <span class="label">Remaining Balance</span>
-            <div class="value remaining-value" id="disp-remaining-balance">₱11,153.80</div>
-          </div>
-
         </div>
 
-        <!-- Visual Progress Bar -->
-        <div class="progress-container">
-          <div class="progress-labels">
+        <div class="remaining-box" id="remaining-box">
+          <span class="bal-label">REMAINING BALANCE</span>
+          <div class="remaining-value" id="disp-remaining-balance">₱11,153.80</div>
+        </div>
+
+        <!-- Simple Progress Bar -->
+        <div class="progress-section">
+          <div class="progress-info">
             <span>Spent: <strong id="spent-percentage">0%</strong></span>
-            <span id="budget-status-text" class="status-good"><i class="fa-solid fa-shield-halved"></i> Healthy Budget</span>
+            <span id="budget-status-text" class="text-success">Healthy</span>
           </div>
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%;"></div>
+          <div class="progress-bg">
+            <div class="progress-fill" id="progress-bar-fill" style="width: 0%;"></div>
           </div>
         </div>
       </section>
 
-      <!-- Add Expense Form Card -->
-      <section class="card add-expense-card">
-        <div class="card-header">
-          <h2><i class="fa-solid fa-circle-plus"></i> Add New Expense</h2>
+      <!-- Add Expense Card -->
+      <section class="card">
+        <div class="card-title">➕ Add Expense</div>
+
+        <!-- Quick Preset Chips -->
+        <div class="presets-row">
+          <span class="presets-title">Quick Add:</span>
+          <button class="chip" data-name="Rice & Groceries" data-cat="Food">🍚 Rice</button>
+          <button class="chip" data-name="Electricity Bill" data-cat="Bills">⚡ Electricity</button>
+          <button class="chip" data-name="Water Bill" data-cat="Bills">💧 Water</button>
+          <button class="chip" data-name="Internet" data-cat="Bills">🌐 Internet</button>
+          <button class="chip" data-name="Transpo" data-cat="Transport">🚌 Transpo</button>
+          <button class="chip" data-name="Rent" data-cat="Housing">🏠 Rent</button>
         </div>
 
-        <!-- Quick Expense Preset Chips -->
-        <div class="quick-chips-wrapper">
-          <span class="quick-label"><i class="fa-solid fa-bolt"></i> Quick Presets:</span>
-          <div class="chips-list">
-            <button class="chip" data-name="Rice & Groceries" data-cat="Food">🍚 Rice</button>
-            <button class="chip" data-name="Electric Bill" data-cat="Bills">⚡ Electricity</button>
-            <button class="chip" data-name="Water Bill" data-cat="Bills">💧 Water</button>
-            <button class="chip" data-name="Internet / Wifi" data-cat="Bills">🌐 Internet</button>
-            <button class="chip" data-name="Transpo Fare" data-cat="Transport">🚌 Transpo</button>
-            <button class="chip" data-name="House Rent" data-cat="Housing">🏠 Rent</button>
-          </div>
-        </div>
-
-        <form id="expense-form" class="expense-form">
-          <div class="form-row">
-            <div class="form-group flex-2">
-              <label for="expense-name"><i class="fa-solid fa-tag"></i> Expense Description</label>
-              <input 
-                type="text" 
-                id="expense-name" 
-                placeholder="e.g. Electric Bill, Rice, Transpo..." 
-                required
-              >
-            </div>
-
-            <div class="form-group flex-1">
-              <label for="expense-amount"><i class="fa-solid fa-coins"></i> Amount (₱)</label>
-              <div class="input-with-symbol">
-                <span>₱</span>
-                <input 
-                  type="number" 
-                  id="expense-amount" 
-                  placeholder="0.00" 
-                  step="0.01" 
-                  min="0.01" 
-                  required
-                >
-              </div>
-            </div>
+        <form id="expense-form" class="simple-form">
+          <div class="form-group">
+            <label for="expense-name">Expense Name</label>
+            <input type="text" id="expense-name" placeholder="e.g. Rice, Electric Bill..." required>
           </div>
 
           <div class="form-row">
             <div class="form-group flex-1">
-              <label for="expense-category"><i class="fa-solid fa-list-ul"></i> Category</label>
+              <label for="expense-amount">Amount (₱)</label>
+              <input type="number" id="expense-amount" placeholder="0.00" step="0.01" min="0.01" required>
+            </div>
+
+            <div class="form-group flex-1">
+              <label for="expense-category">Category</label>
               <select id="expense-category">
                 <option value="Food">🍚 Food & Groceries</option>
                 <option value="Bills">⚡ Bills & Utilities</option>
                 <option value="Transport">🚌 Transportation</option>
                 <option value="Housing">🏠 Rent & Housing</option>
                 <option value="Health">🏥 Health & Medical</option>
-                <option value="Shopping">🛍️ Shopping & Personal</option>
+                <option value="Shopping">🛍️ Shopping</option>
                 <option value="Entertainment">🎮 Entertainment</option>
-                <option value="Others">💡 Other Expenses</option>
+                <option value="Others">💡 Others</option>
               </select>
             </div>
-
-            <div class="form-group flex-1 form-btn-container">
-              <button type="submit" class="btn btn-accent btn-block">
-                <i class="fa-solid fa-plus"></i> Add Expense
-              </button>
-            </div>
           </div>
+
+          <button type="submit" class="btn btn-primary btn-block">➕ Add Expense</button>
         </form>
       </section>
 
-      <!-- Expense List Card -->
-      <section class="card list-card">
-        <div class="card-header flex-between">
-          <h2><i class="fa-solid fa-receipt"></i> Expenses List</h2>
-          
-          <div class="filter-controls">
-            <select id="category-filter" class="select-sm">
-              <option value="ALL">All Categories</option>
-              <option value="Food">🍚 Food</option>
-              <option value="Bills">⚡ Bills</option>
-              <option value="Transport">🚌 Transport</option>
-              <option value="Housing">🏠 Housing</option>
-              <option value="Health">🏥 Health</option>
-              <option value="Shopping">🛍️ Shopping</option>
-              <option value="Entertainment">🎮 Entertainment</option>
-              <option value="Others">💡 Others</option>
-            </select>
-          </div>
+      <!-- Expenses List Card -->
+      <section class="card">
+        <div class="card-header-flex">
+          <div class="card-title">📝 Expense List</div>
+          <select id="category-filter" class="select-filter">
+            <option value="ALL">All Categories</option>
+            <option value="Food">🍚 Food</option>
+            <option value="Bills">⚡ Bills</option>
+            <option value="Transport">🚌 Transport</option>
+            <option value="Housing">🏠 Housing</option>
+            <option value="Health">🏥 Health</option>
+            <option value="Shopping">🛍️ Shopping</option>
+            <option value="Entertainment">🎮 Entertainment</option>
+            <option value="Others">💡 Others</option>
+          </select>
         </div>
 
         <div id="expense-list" class="expense-list">
-          <!-- Dynamically populated expenses -->
+          <!-- Dynamically populated -->
         </div>
 
-        <!-- Empty state placeholder -->
         <div id="empty-state" class="empty-state" style="display: none;">
-          <i class="fa-solid fa-folder-open"></i>
-          <p>No expenses recorded yet.</p>
-          <small>Add your first expense above to start tracking!</small>
+          <p>No expenses added yet.</p>
         </div>
 
-        <div class="list-footer">
-          <button id="export-btn" class="btn btn-secondary btn-sm">
-            <i class="fa-solid fa-file-export"></i> Export Report
-          </button>
-          <button id="clear-all-btn" class="btn btn-danger-outline btn-sm">
-            <i class="fa-solid fa-trash-can"></i> Clear All
-          </button>
+        <div class="card-footer-actions">
+          <button id="export-btn" class="btn btn-secondary btn-sm">📄 Export CSV</button>
+          <button id="clear-all-btn" class="btn btn-danger btn-sm">🗑️ Clear All</button>
         </div>
       </section>
 
     </main>
 
-    <!-- Footer -->
     <footer class="app-footer">
-      <p>Salary Budget Tracker &bull; Works Offline &bull; Installable Phone App</p>
+      <p>Simple Salary Budget Tracker &bull; 100% Offline</p>
     </footer>
   </div>
 
   <!-- Edit Expense Modal -->
-  <div id="edit-modal" class="modal-backdrop" style="display: none;">
-    <div class="modal-card">
+  <div id="edit-modal" class="modal" style="display: none;">
+    <div class="modal-content">
       <div class="modal-header">
-        <h3><i class="fa-solid fa-pen-to-square"></i> Edit Expense</h3>
-        <button id="close-modal-btn" class="close-btn">&times;</button>
+        <h3>✏️ Edit Expense</h3>
+        <button id="close-modal-btn" class="close-x">&times;</button>
       </div>
       <form id="edit-expense-form">
         <input type="hidden" id="edit-expense-id">
         <div class="form-group">
-          <label for="edit-expense-name">Expense Description</label>
+          <label for="edit-expense-name">Expense Name</label>
           <input type="text" id="edit-expense-name" required>
         </div>
         <div class="form-group">
           <label for="edit-expense-amount">Amount (₱)</label>
-          <div class="input-with-symbol">
-            <span>₱</span>
-            <input type="number" id="edit-expense-amount" step="0.01" min="0.01" required>
-          </div>
+          <input type="number" id="edit-expense-amount" step="0.01" min="0.01" required>
         </div>
         <div class="form-group">
           <label for="edit-expense-category">Category</label>
@@ -253,45 +197,20 @@
             <option value="Transport">🚌 Transportation</option>
             <option value="Housing">🏠 Rent & Housing</option>
             <option value="Health">🏥 Health & Medical</option>
-            <option value="Shopping">🛍️ Shopping & Personal</option>
+            <option value="Shopping">🛍️ Shopping</option>
             <option value="Entertainment">🎮 Entertainment</option>
-            <option value="Others">💡 Other Expenses</option>
+            <option value="Others">💡 Others</option>
           </select>
         </div>
-        <div class="modal-footer">
+        <div class="modal-buttons">
           <button type="button" id="cancel-edit-btn" class="btn btn-secondary">Cancel</button>
-          <button type="submit" class="btn btn-accent">Save Changes</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Installation Helper Modal -->
-  <div id="install-guide-modal" class="modal-backdrop" style="display: none;">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-mobile-screen-button"></i> Install App on Phone</h3>
-        <button id="close-install-modal-btn" class="close-btn">&times;</button>
-      </div>
-      <div class="install-guide-content">
-        <p style="margin-bottom: 12px; font-weight: 600;">To install this app on your phone home screen:</p>
-        <ol class="install-steps">
-          <li>Tap the <strong>3 Dots (⋮)</strong> menu in the top-right corner of Chrome (next to the address bar).</li>
-          <li>Select <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>.</li>
-          <li>Tap <strong>Add / Install</strong> to confirm.</li>
-        </ol>
-        <div class="install-guide-box">
-          <i class="fa-solid fa-check-circle" style="color: var(--primary);"></i>
-          <span>Once installed, it will appear as an app on your phone home screen and work 100% offline!</span>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="got-it-btn" class="btn btn-primary btn-block">Got It!</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Notification Container -->
+  <!-- Toast Notification -->
   <div id="toast-container" class="toast-container"></div>
 
   <script src="app.js"></script>

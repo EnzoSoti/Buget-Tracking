@@ -1,17 +1,17 @@
 /**
- * Salary Budget Tracker — Main Application Logic
+ * Salary Budget Tracker — Simple 100% Offline Logic
  */
 
-// Category Definitions with Icons
+// Category Definitions with Emojis
 const CATEGORIES = {
-  Food: { label: 'Food & Groceries', icon: 'fa-utensils', emoji: '🍚' },
-  Bills: { label: 'Bills & Utilities', icon: 'fa-bolt', emoji: '⚡' },
-  Transport: { label: 'Transportation', icon: 'fa-bus', emoji: '🚌' },
-  Housing: { label: 'Rent & Housing', icon: 'fa-house', emoji: '🏠' },
-  Health: { label: 'Health & Medical', icon: 'fa-briefcase-medical', emoji: '🏥' },
-  Shopping: { label: 'Shopping & Personal', icon: 'fa-bag-shopping', emoji: '🛍️' },
-  Entertainment: { label: 'Entertainment', icon: 'fa-gamepad', emoji: '🎮' },
-  Others: { label: 'Other Expenses', icon: 'fa-lightbulb', emoji: '💡' }
+  Food: { label: 'Food & Groceries', emoji: '🍚' },
+  Bills: { label: 'Bills & Utilities', emoji: '⚡' },
+  Transport: { label: 'Transportation', emoji: '🚌' },
+  Housing: { label: 'Rent & Housing', emoji: '🏠' },
+  Health: { label: 'Health & Medical', emoji: '🏥' },
+  Shopping: { label: 'Shopping', emoji: '🛍️' },
+  Entertainment: { label: 'Entertainment', emoji: '🎮' },
+  Others: { label: 'Others', emoji: '💡' }
 };
 
 // Initial State
@@ -20,9 +20,6 @@ let state = {
   expenses: [],
   theme: 'dark'
 };
-
-// PWA Install Prompt Deferred Event
-let deferredPrompt = null;
 
 // DOM Elements
 const salaryInput = document.getElementById('salary-input');
@@ -43,7 +40,7 @@ const emptyState = document.getElementById('empty-state');
 const categoryFilter = document.getElementById('category-filter');
 
 const themeToggleBtn = document.getElementById('theme-toggle');
-const pwaInstallBtn = document.getElementById('pwa-install-btn');
+const downloadAppBtn = document.getElementById('download-app-btn');
 const exportBtn = document.getElementById('export-btn');
 const clearAllBtn = document.getElementById('clear-all-btn');
 
@@ -57,11 +54,6 @@ const editCategoryInput = document.getElementById('edit-expense-category');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const cancelEditBtn = document.getElementById('cancel-edit-btn');
 
-// Install Guide Modal Elements
-const installGuideModal = document.getElementById('install-guide-modal');
-const closeInstallModalBtn = document.getElementById('close-install-modal-btn');
-const gotItBtn = document.getElementById('got-it-btn');
-
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
   loadSavedData();
@@ -72,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Load from localStorage
 function loadSavedData() {
-  const savedState = localStorage.getItem('salary_budget_tracker_data');
+  const savedState = localStorage.getItem('simple_salary_budget_data');
   if (savedState) {
     try {
       const parsed = JSON.parse(savedState);
@@ -84,17 +76,14 @@ function loadSavedData() {
     }
   }
 
-  // Set Theme
   document.documentElement.setAttribute('data-theme', state.theme);
-  updateThemeIcon();
-  
-  // Set Salary Field
+  themeToggleBtn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
   salaryInput.value = state.salary;
 }
 
 // Save to localStorage
 function saveData() {
-  localStorage.setItem('salary_budget_tracker_data', JSON.stringify(state));
+  localStorage.setItem('simple_salary_budget_data', JSON.stringify(state));
 }
 
 // Currency Formatter
@@ -107,26 +96,23 @@ function formatPeso(amount) {
   }).format(amount);
 }
 
-// Setup Event Listeners
+// Event Listeners
 function setupEventListeners() {
-  // Update Salary
+  // Save Salary
   updateSalaryBtn.addEventListener('click', () => {
     const val = parseFloat(salaryInput.value);
     if (!isNaN(val) && val >= 0) {
       state.salary = val;
       saveData();
       renderApp();
-      showToast('Salary updated to ' + formatPeso(val));
+      showToast('Salary saved: ' + formatPeso(val));
     } else {
-      showToast('Please enter a valid salary amount', true);
+      showToast('Please enter a valid salary', true);
     }
   });
 
-  // Salary enter key
   salaryInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      updateSalaryBtn.click();
-    }
+    if (e.key === 'Enter') updateSalaryBtn.click();
   });
 
   // Add Expense
@@ -137,7 +123,7 @@ function setupEventListeners() {
     const category = expenseCategoryInput.value;
 
     if (!name || isNaN(amount) || amount <= 0) {
-      showToast('Please enter a valid expense name and amount', true);
+      showToast('Please enter valid name and amount', true);
       return;
     }
 
@@ -153,48 +139,43 @@ function setupEventListeners() {
     saveData();
     renderApp();
 
-    // Reset Form
     expenseNameInput.value = '';
     expenseAmountInput.value = '';
     expenseNameInput.focus();
 
-    showToast(`Added "${name}" (${formatPeso(amount)})`);
+    showToast(`Added: ${name} (${formatPeso(amount)})`);
   });
 
-  // Quick Preset Chips
+  // Presets
   document.querySelectorAll('.chip').forEach(chip => {
     chip.addEventListener('click', () => {
       expenseNameInput.value = chip.dataset.name;
-      if (chip.dataset.cat) {
-        expenseCategoryInput.value = chip.dataset.cat;
-      }
+      if (chip.dataset.cat) expenseCategoryInput.value = chip.dataset.cat;
       expenseAmountInput.focus();
     });
   });
 
-  // Filter Category Change
-  categoryFilter.addEventListener('change', () => {
-    renderExpenseList();
-  });
+  // Filter
+  categoryFilter.addEventListener('change', renderExpenseList);
 
   // Theme Toggle
   themeToggleBtn.addEventListener('click', () => {
     state.theme = state.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', state.theme);
-    updateThemeIcon();
+    themeToggleBtn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
     saveData();
   });
 
-  // Export CSV/Report
+  // Download Offline Standalone App File
+  downloadAppBtn.addEventListener('click', downloadSingleFileApp);
+
+  // Export CSV
   exportBtn.addEventListener('click', exportBudgetReport);
 
   // Clear All
   clearAllBtn.addEventListener('click', () => {
-    if (state.expenses.length === 0) {
-      showToast('No expenses to clear');
-      return;
-    }
-    if (confirm('Are you sure you want to clear ALL expenses?')) {
+    if (state.expenses.length === 0) return;
+    if (confirm('Clear all expenses?')) {
       state.expenses = [];
       saveData();
       renderApp();
@@ -212,83 +193,52 @@ function setupEventListeners() {
   editForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const id = editIdInput.value;
-    const name = editNameInput.value.trim();
-    const amount = parseFloat(editAmountInput.value);
-    const category = editCategoryInput.value;
-
     const item = state.expenses.find(exp => exp.id === id);
     if (item) {
-      item.name = name;
-      item.amount = amount;
-      item.category = category;
+      item.name = editNameInput.value.trim();
+      item.amount = parseFloat(editAmountInput.value);
+      item.category = editCategoryInput.value;
       saveData();
       renderApp();
       closeModal();
       showToast('Expense updated');
     }
   });
-
-  // Install Guide Modal Listeners
-  closeInstallModalBtn.addEventListener('click', () => installGuideModal.style.display = 'none');
-  gotItBtn.addEventListener('click', () => installGuideModal.style.display = 'none');
-  installGuideModal.addEventListener('click', (e) => {
-    if (e.target === installGuideModal) installGuideModal.style.display = 'none';
-  });
-
-  // Install Button Click Handler
-  pwaInstallBtn.addEventListener('click', () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === 'accepted') {
-          showToast('App installed successfully!');
-        }
-        deferredPrompt = null;
-      });
-    } else {
-      // Show step-by-step installation guide popup
-      installGuideModal.style.display = 'flex';
-    }
-  });
 }
 
 // Render Entire UI
 function renderApp() {
-  // 1. Calculate Totals
   const totalSalary = state.salary;
   const totalExpenses = state.expenses.reduce((sum, item) => sum + item.amount, 0);
   const remainingBalance = totalSalary - totalExpenses;
   const spentPct = totalSalary > 0 ? Math.min(Math.round((totalExpenses / totalSalary) * 100), 999) : 0;
 
-  // 2. Update Displays
   dispTotalSalary.textContent = formatPeso(totalSalary);
   dispTotalExpenses.textContent = formatPeso(totalExpenses);
   dispRemainingBalance.textContent = formatPeso(remainingBalance);
   spentPercentage.textContent = `${spentPct}%`;
 
-  // 3. Progress Bar & Health Status
   progressBarFill.style.width = `${Math.min(spentPct, 100)}%`;
-  
-  const remainingBox = document.querySelector('.summary-box.remaining-box');
+
+  const remainingBox = document.getElementById('remaining-box');
   remainingBox.classList.remove('warning', 'danger');
   progressBarFill.classList.remove('warning', 'danger');
 
   if (remainingBalance < 0 || spentPct > 90) {
     remainingBox.classList.add('danger');
     progressBarFill.classList.add('danger');
-    budgetStatusText.className = 'status-danger';
-    budgetStatusText.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Critical / Over Budget!';
+    budgetStatusText.className = 'text-danger';
+    budgetStatusText.textContent = 'Critical!';
   } else if (spentPct >= 75) {
     remainingBox.classList.add('warning');
     progressBarFill.classList.add('warning');
-    budgetStatusText.className = 'status-warning';
-    budgetStatusText.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Warning: 75%+ Spent';
+    budgetStatusText.className = 'text-warning';
+    budgetStatusText.textContent = '75%+ Spent';
   } else {
-    budgetStatusText.className = 'status-good';
-    budgetStatusText.innerHTML = '<i class="fa-solid fa-shield-halved"></i> Healthy Budget';
+    budgetStatusText.className = 'text-success';
+    budgetStatusText.textContent = 'Healthy';
   }
 
-  // 4. Render Expenses List
   renderExpenseList();
 }
 
@@ -302,7 +252,7 @@ function renderExpenseList() {
   expenseList.innerHTML = '';
 
   if (filtered.length === 0) {
-    emptyState.style.display = 'flex';
+    emptyState.style.display = 'block';
     return;
   }
 
@@ -314,22 +264,18 @@ function renderExpenseList() {
     const div = document.createElement('div');
     div.className = 'expense-item';
     div.innerHTML = `
-      <div class="expense-icon">
-        <i class="fa-solid ${catInfo.icon}"></i>
+      <div class="exp-left">
+        <span class="exp-emoji">${catInfo.emoji}</span>
+        <div>
+          <div class="exp-title">${escapeHtml(item.name)}</div>
+          <div class="exp-sub">${catInfo.label} &bull; ${item.date || 'Today'}</div>
+        </div>
       </div>
-      <div class="expense-details">
-        <span class="expense-title">${escapeHtml(item.name)}</span>
-        <span class="expense-meta">${catInfo.emoji} ${catInfo.label} &bull; ${item.date || 'Today'}</span>
-      </div>
-      <div class="expense-amount-actions">
-        <span class="expense-amount">-${formatPeso(item.amount)}</span>
-        <div class="item-actions">
-          <button class="action-btn edit-btn" onclick="openEditModal('${item.id}')" title="Edit">
-            <i class="fa-solid fa-pen"></i>
-          </button>
-          <button class="action-btn delete-btn" onclick="deleteExpense('${item.id}')" title="Delete">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
+      <div class="exp-right">
+        <span class="exp-amount">-${formatPeso(item.amount)}</span>
+        <div class="exp-actions">
+          <button class="exp-btn" onclick="openEditModal('${item.id}')" title="Edit">✏️</button>
+          <button class="exp-btn" onclick="deleteExpense('${item.id}')" title="Delete">🗑️</button>
         </div>
       </div>
     `;
@@ -344,11 +290,11 @@ window.deleteExpense = function(id) {
     state.expenses = state.expenses.filter(e => e.id !== id);
     saveData();
     renderApp();
-    showToast('Expense deleted');
+    showToast('Deleted');
   }
 };
 
-// Open Edit Modal
+// Edit Expense Modal
 window.openEditModal = function(id) {
   const item = state.expenses.find(e => e.id === id);
   if (!item) return;
@@ -365,92 +311,85 @@ function closeModal() {
   editModal.style.display = 'none';
 }
 
-// Theme Icon Update
-function updateThemeIcon() {
-  const icon = themeToggleBtn.querySelector('i');
-  if (state.theme === 'dark') {
-    icon.className = 'fa-solid fa-sun';
-  } else {
-    icon.className = 'fa-solid fa-moon';
-  }
+// Download Offline Standalone App HTML File for Phone
+function downloadSingleFileApp() {
+  const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Salary Budget Tracker</title>
+  <style>
+  ${document.querySelector('style')?.textContent || ''}
+  </style>
+</head>
+<body>
+${document.body.innerHTML}
+</body>
+</html>`;
+
+  const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'SalaryBudgetTracker.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast('Offline App File downloaded! Open in phone browser.');
 }
 
-// Export Budget Report to Text / CSV File
+// Export CSV Report
 function exportBudgetReport() {
   if (state.expenses.length === 0) {
-    showToast('No data to export', true);
+    showToast('No expenses to export', true);
     return;
   }
 
-  const totalSalary = state.salary;
-  const totalExpenses = state.expenses.reduce((sum, item) => sum + item.amount, 0);
-  const remaining = totalSalary - totalExpenses;
-
-  let csvContent = "data:text/csv;charset=utf-8,";
-  csvContent += "SALARY BUDGET TRACKER REPORT\n";
-  csvContent += `Total Salary,${totalSalary}\n`;
-  csvContent += `Total Expenses,${totalExpenses}\n`;
-  csvContent += `Remaining Balance,${remaining}\n\n`;
-  csvContent += "Date,Expense Description,Category,Amount (PHP)\n";
-
+  let csv = "Date,Expense Description,Category,Amount (PHP)\n";
   state.expenses.forEach(exp => {
-    csvContent += `"${exp.date || ''}","${exp.name.replace(/"/g, '""')}","${exp.category}",${exp.amount}\n`;
+    csv += `"${exp.date || ''}","${exp.name.replace(/"/g, '""')}","${exp.category}",${exp.amount}\n`;
   });
 
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `Salary_Budget_${new Date().toISOString().slice(0, 10)}.csv`);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `Salary_Budget_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 
-  showToast('Budget report downloaded!');
+  showToast('CSV Report downloaded');
 }
 
-// Helper: Toast Notifications
+// Helper: Toast
 function showToast(msg, isError = false) {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
   toast.className = `toast ${isError ? 'error' : ''}`;
-  toast.innerHTML = `
-    <i class="fa-solid ${isError ? 'fa-circle-xmark' : 'fa-circle-check'}"></i>
-    <span>${msg}</span>
-  `;
+  toast.textContent = msg;
   container.appendChild(toast);
 
   setTimeout(() => {
     toast.style.opacity = '0';
-    toast.style.transform = 'translateY(10px)';
-    toast.style.transition = 'all 0.3s ease';
+    toast.style.transition = 'opacity 0.3s ease';
     setTimeout(() => toast.remove(), 300);
-  }, 2500);
+  }, 2200);
 }
 
-// Helper: Escape HTML
 function escapeHtml(str) {
-  return str.replace(/[&<>"']/g, function(m) {
-    return {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;'
-    }[m];
-  });
+  return str.replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' })[m]);
 }
 
-// PWA Service Worker Registration & Install Banner
+// Register Service Worker
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
-      .then(reg => console.log('Service Worker registered:', reg.scope))
-      .catch(err => console.error('SW registration failed:', err));
+      .then(reg => console.log('SW registered'))
+      .catch(err => console.error('SW failed', err));
   }
-
-  // Capture Install Prompt Event for Mobile Phones
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-  });
 }
