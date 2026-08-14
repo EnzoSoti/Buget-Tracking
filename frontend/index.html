@@ -54,13 +54,50 @@
       background: #475569;
     }
 
+    /* Global Input & Date Picker Styles to prevent React Native Web processor conflicts */
+    input, textarea, select {
+      outline: none !important;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
+    }
+
+    /* Modern Date Input Styling */
+    .modern-date-input {
+      font-family: var(--font-sans);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      height: 48px;
+      box-sizing: border-box;
+      cursor: pointer;
+      width: 100%;
+      border: 1px solid #334155;
+      background-color: #1e293b;
+      color: #f8fafc;
+    }
+
+    /* Light Theme Overrides (determined by parent class if needed, or inline/global media) */
+    .light-theme-picker {
+      background-color: #ffffff !important;
+      color: #111827 !important;
+      border-color: #e5e7eb !important;
+    }
+
+    .light-theme-picker:focus {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+    }
+
+    .modern-date-input:focus {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+    }
+
     /* Style resets for native date pickers */
     input[type="date"] {
       -webkit-appearance: none;
       -moz-appearance: none;
       appearance: none;
-      background-position: right 10px center;
-      background-repeat: no-repeat;
     }
   </style>
 </head>

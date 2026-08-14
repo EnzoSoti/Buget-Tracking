@@ -305,23 +305,8 @@ export default function App() {
 
   const theme = isDark ? darkTheme : lightTheme;
 
-  // Modern input styles with smooth styling attributes
-  const dateInputStyle = {
-    backgroundColor: isDark ? '#1e293b' : '#ffffff',
-    color: isDark ? '#f8fafc' : '#0f172a',
-    border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-    borderRadius: '12px',
-    padding: '10px 14px',
-    fontSize: '14px',
-    fontWeight: '600',
-    fontFamily: 'inherit',
-    outline: 'none',
-    height: '48px',
-    boxSizing: 'border-box',
-    cursor: 'pointer',
-    width: '100%',
-    transition: 'border-color 0.2s, box-shadow 0.2s',
-  };
+  // Resolve input class depending on theme
+  const dateInputClassName = isDark ? "modern-date-input" : "modern-date-input light-theme-picker";
 
   return (
     <SafeAreaView style={[styles.container, theme.container]}>
@@ -354,7 +339,7 @@ export default function App() {
               <Text style={[styles.fieldTitle, theme.subtext]}>Start Date</Text>
               <input
                 type="date"
-                style={dateInputStyle}
+                className={dateInputClassName}
                 value={cutoffStart}
                 onChange={(e) => {
                   if (e.target.value) {
@@ -369,7 +354,7 @@ export default function App() {
               <Text style={[styles.fieldTitle, theme.subtext]}>End Date</Text>
               <input
                 type="date"
-                style={dateInputStyle}
+                className={dateInputClassName}
                 value={cutoffEnd}
                 onChange={(e) => {
                   if (e.target.value) {
@@ -402,7 +387,7 @@ export default function App() {
             <View style={{ flex: 2 }}>
               <input
                 type="date"
-                style={dateInputStyle}
+                className={dateInputClassName}
                 value={selectedDate}
                 onChange={(e) => {
                   if (e.target.value) {
@@ -475,7 +460,8 @@ export default function App() {
               <Text style={[styles.inlineDateLabel, theme.subtext]}>For Date:</Text>
               <input
                 type="date"
-                style={[dateInputStyle, { height: '36px', width: '140px', padding: '4px 8px', fontSize: '13px' }]}
+                className={dateInputClassName}
+                style={{ height: '36px', width: '140px', padding: '4px 8px', fontSize: '13px' }}
                 value={expenseDate}
                 onChange={(e) => setExpenseDate(e.target.value)}
               />
@@ -598,7 +584,8 @@ export default function App() {
                 Daily Cut-off attendance details (Tap row to toggle state)
               </Text>
 
-              <View style={styles.attList}>
+              {/* Use native ScrollView container for attendance row items to guarantee scrolling reliability */}
+              <ScrollView style={{ maxHeight: 280 }} contentContainerStyle={{ gap: 8 }} showsVerticalScrollIndicator={true}>
                 {rangeDates.map(dateStr => {
                   const status = getResolvedStatus(dateStr);
                   const dayName = getDayNameStr(dateStr);
@@ -629,7 +616,7 @@ export default function App() {
                     </TouchableOpacity>
                   );
                 })}
-              </View>
+              </ScrollView>
 
               <View style={styles.calcSummaryBox}>
                 <Text style={styles.calcSummaryLabel}>NET CUT-OFF SALARY</Text>
@@ -662,7 +649,7 @@ export default function App() {
             <Text style={[styles.fieldTitle, theme.subtext]}>Date</Text>
             <input
               type="date"
-              style={dateInputStyle}
+              className={dateInputClassName}
               value={editDate}
               onChange={(e) => setEditDate(e.target.value)}
             />
@@ -916,9 +903,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     fontSize: 15,
     fontWeight: '600',
-    outlineStyle: 'none',
+    outlineWidth: 0,
     width: '100%',
-    transition: 'border-color 0.2s, box-shadow 0.2s',
   },
   twoColumnGrid: {
     flexDirection: 'row',
@@ -956,12 +942,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     lineHeight: 18,
-  },
-  attList: {
-    gap: 8,
-    maxHeight: 280,
-    overflowY: 'auto',
-    paddingRight: 4,
   },
   attRow: {
     flexDirection: 'row',
