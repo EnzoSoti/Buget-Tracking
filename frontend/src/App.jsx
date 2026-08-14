@@ -18,7 +18,7 @@ const getTodayString = (d = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
-// Returns date string + day name (e.g., "Saturday")
+// Returns short day name (e.g. "Sat")
 const getDayNameStr = (dateStr) => {
   try {
     const [y, m, d] = dateStr.split('-').map(Number);
@@ -29,15 +29,8 @@ const getDayNameStr = (dateStr) => {
   }
 };
 
-// Check if a date string is Sunday
-const isSunday = (dateStr) => {
-  return getDayNameStr(dateStr) === 'Sun';
-};
-
-// Check if a date string is Saturday
-const isSaturday = (dateStr) => {
-  return getDayNameStr(dateStr) === 'Sat';
-};
+const isSunday = (dateStr) => getDayNameStr(dateStr) === 'Sun';
+const isSaturday = (dateStr) => getDayNameStr(dateStr) === 'Sat';
 
 // Generate array of date strings between start and end date (inclusive)
 const getDateRangeArray = (startStr, endStr) => {
@@ -70,16 +63,15 @@ export default function App() {
   // Date Selection State
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [expenseDate, setExpenseDate] = useState(getTodayString());
-  const [salaryInputVal, setSalaryInputVal] = useState('21000.00');
+  const [salaryInputVal, setSalaryInputVal] = useState('10500.00');
   
   // Cut-off Calculator State
   const [showCalculator, setShowCalculator] = useState(false);
-  const [monthlyRate, setMonthlyRate] = useState('21000');
-  const [workingDaysInMonth, setWorkingDaysInMonth] = useState('22');
+  const [cutoffBasePay, setCutoffBasePay] = useState('10500'); // ₱10,500 per cut-off
   const [cutoffStart, setCutoffStart] = useState('2026-07-26');
   const [cutoffEnd, setCutoffEnd] = useState('2026-08-10');
   
-  // Map of Date -> Attendance Status ('FULL' = 1.0, 'SAT_FULL' = 1.0, 'HALF' = 0.5, 'ABSENT' = 0, 'REST_DAY' = 0)
+  // Map of Date -> Attendance Status ('FULL', 'SAT_FULL', 'HALF', 'ABSENT', 'REST_DAY')
   const [attendanceMap, setAttendanceMap] = useState({});
   
   // Form State
@@ -115,12 +107,11 @@ export default function App() {
         if (parsed.attendanceMap) {
           setAttendanceMap(parsed.attendanceMap);
         }
-        if (parsed.monthlyRate) setMonthlyRate(parsed.monthlyRate);
-        if (parsed.workingDaysInMonth) setWorkingDaysInMonth(parsed.workingDaysInMonth);
+        if (parsed.cutoffBasePay) setCutoffBasePay(parsed.cutoffBasePay);
         if (parsed.cutoffStart) setCutoffStart(parsed.cutoffStart);
         if (parsed.cutoffEnd) setCutoffEnd(parsed.cutoffEnd);
       } else {
-        setDailySalaries({ [getTodayString()]: 21000.00 });
+        setDailySalaries({ [getTodayString()]: 10500.00 });
       }
     } catch (e) {
       console.error(e);
@@ -129,7 +120,7 @@ export default function App() {
 
   // Update Salary Input when Selected Date Changes
   useEffect(() => {
-    const currentInc = dailySalaries[selectedDate] ?? (selectedDate === getTodayString() ? 21000.00 : 0);
+    const currentInc = dailySalaries[selectedDate] ?? (selectedDate === getTodayString() ? 10500.00 : 0);
     setSalaryInputVal(currentInc > 0 ? currentInc.toString() : '');
   }, [selectedDate, dailySalaries]);
 
@@ -141,8 +132,7 @@ export default function App() {
         expenses: newExpenses,
         isDark: newIsDark,
         attendanceMap: newAttMap,
-        monthlyRate,
-        workingDaysInMonth,
+        cutoffBasePay,
         cutoffStart,
         cutoffEnd,
         ...extra
@@ -280,11 +270,9 @@ export default function App() {
 
   // --- CUT-OFF SALARY CALCULATION LOGIC ---
   const rangeDates = getDateRangeArray(cutoffStart, cutoffEnd);
-  const baseMonthly = parseFloat(monthlyRate) || 0;
-  const workDaysCount = parseFloat(workingDaysInMonth) || 22;
-  const dailyRate = workDaysCount > 0 ? baseMonthly / workDaysCount : 0;
+  const baseCutoffPay = parseFloat(cutoffBasePay) || 10500;
 
-  // Resolve status for a date (applying Saturday & Sunday default schedule rules)
+  // Resolve status for a date (Saturdays = 1.0x Full pay, Sundays = 0x Rest day)
   const getResolvedStatus = (dateStr) => {
     if (attendanceMap[dateStr]) return attendanceMap[dateStr];
     if (isSunday(dateStr)) return 'REST_DAY';
@@ -292,16 +280,24 @@ export default function App() {
     return 'FULL';
   };
 
-  // Calculate total days worked in range based on attendance
-  let totalWorkedDays = 0;
+  // Total scheduled work days in this cut-off period
+  let totalScheduledDays = 0;
+  let totalAttendedDays = 0;
+
   rangeDates.forEach(d => {
     const status = getResolvedStatus(d);
-    if (status === 'FULL' || status === 'SAT_FULL') totalWorkedDays += 1.0;
-    else if (status === 'HALF') totalWorkedDays += 0.5;
-    else if (status === 'ABSENT' || status === 'REST_DAY') totalWorkedDays += 0;
+    // Scheduled work days count (all non-Sundays)
+    if (!isSunday(d)) totalScheduledDays += 1.0;
+
+    // Attended days count
+    if (status === 'FULL' || status === 'SAT_FULL') totalAttendedDays += 1.0;
+    else if (status === 'HALF') totalAttendedDays += 0.5;
+    else if (status === 'ABSENT' || status === 'REST_DAY') totalAttendedDays += 0;
   });
 
-  const calculatedCutoffSalary = Math.round(totalWorkedDays * dailyRate * 100) / 100;
+  // Daily rate for this specific cut-off period
+  const dailyCutoffRate = totalScheduledDays > 0 ? baseCutoffPay / totalScheduledDays : 0;
+  const calculatedCutoffSalary = Math.round(totalAttendedDays * dailyCutoffRate * 100) / 100;
 
   // Cycle Attendance status when tapping a date row
   const toggleAttendanceStatus = (dateStr) => {
@@ -331,7 +327,7 @@ export default function App() {
   };
 
   // Current Selected Date's Income & Expenses
-  const currentDateSalary = dailySalaries[selectedDate] ?? (selectedDate === getTodayString() ? 21000.00 : 0);
+  const currentDateSalary = dailySalaries[selectedDate] ?? (selectedDate === getTodayString() ? 10500.00 : 0);
   const dateExpenses = expenses.filter(exp => exp.date === selectedDate);
   const totalDateExpenses = dateExpenses.reduce((sum, item) => sum + item.amount, 0);
   
@@ -383,7 +379,7 @@ export default function App() {
         <View style={styles.topHeader}>
           <View>
             <Text style={[styles.mainTitle, theme.text]}>Budget Tracker</Text>
-            <Text style={[styles.mainSubtitle, theme.subtext]}>Paycheck & Attendance Auto-Calculator</Text>
+            <Text style={[styles.mainSubtitle, theme.subtext]}>₱10,500 Semi-Monthly Cut-off Paycheck</Text>
           </View>
           <TouchableOpacity style={[styles.themePill, theme.card]} onPress={toggleTheme}>
             <Text style={styles.themeEmoji}>{isDark ? '☀️ Light' : '🌙 Dark'}</Text>
@@ -440,7 +436,7 @@ export default function App() {
 
           <View style={styles.balanceMiniRow}>
             <View style={styles.miniStat}>
-              <Text style={styles.miniLabel}>Income ({selectedDate})</Text>
+              <Text style={styles.miniLabel}>Cut-off Income ({selectedDate})</Text>
               <Text style={styles.miniValue}>{formatPeso(currentDateSalary)}</Text>
             </View>
             <View style={styles.miniStat}>
@@ -468,7 +464,7 @@ export default function App() {
           <View style={styles.salaryHeaderFlex}>
             <Text style={[styles.sectionLabel, theme.subtext]}>INCOME FOR {selectedDate}</Text>
             <TouchableOpacity style={styles.calcTriggerBtn} onPress={() => setShowCalculator(true)}>
-              <Text style={styles.calcTriggerBtnText}>🧮 Auto-Compute Salary</Text>
+              <Text style={styles.calcTriggerBtnText}>🧮 Compute Cut-off Pay</Text>
             </TouchableOpacity>
           </View>
 
@@ -479,7 +475,7 @@ export default function App() {
               value={salaryInputVal}
               onChangeText={setSalaryInputVal}
               keyboardType="numeric"
-              placeholder="0.00"
+              placeholder="10500.00"
               placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
             />
             <TouchableOpacity style={styles.actionSaveBtn} onPress={handleUpdateSalary}>
@@ -574,7 +570,7 @@ export default function App() {
           </View>
         </View>
 
-        <Text style={[styles.pageFooterText, theme.subtext]}>Salary Budget Tracker &bull; Auto Cut-off Calculator</Text>
+        <Text style={[styles.pageFooterText, theme.subtext]}>Salary Budget Tracker &bull; ₱10,500 Cut-off Manager</Text>
 
       </ScrollView>
 
@@ -593,36 +589,21 @@ export default function App() {
               {/* Schedule Info Banner */}
               <View style={[styles.scheduleBanner, theme.btnBg]}>
                 <Text style={[styles.scheduleBannerText, theme.text]}>
-                  📅 Schedule Rule Active: Saturdays = Half day (Full Pay 1.0x) | Sundays = Rest Day (No work 0x)
+                  💵 Monthly Net: ₱21,000.00 &bull; Cut-off Net: ₱10,500.00{"\n"}
+                  📅 Saturdays = Halfday (Full Pay 1.0x) | Sundays = Rest Day (No work 0x)
                 </Text>
               </View>
 
-              {/* Monthly Rate & Days */}
-              <View style={styles.twoColumnGrid}>
-                <View style={styles.gridColumn}>
-                  <Text style={[styles.fieldTitle, theme.subtext]}>Base Monthly Salary (₱)</Text>
-                  <TextInput
-                    style={[styles.textInputFull, theme.btnBg, theme.text]}
-                    value={monthlyRate}
-                    onChangeText={setMonthlyRate}
-                    keyboardType="numeric"
-                  />
-                </View>
-                <View style={styles.gridColumn}>
-                  <Text style={[styles.fieldTitle, theme.subtext]}>Work Days in Month</Text>
-                  <TextInput
-                    style={[styles.textInputFull, theme.btnBg, theme.text]}
-                    value={workingDaysInMonth}
-                    onChangeText={setWorkingDaysInMonth}
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-
-              {/* Calculated Daily Rate Info */}
-              <View style={[styles.infoBox, theme.btnBg]}>
-                <Text style={[styles.infoBoxLabel, theme.subtext]}>Daily Rate: </Text>
-                <Text style={[styles.infoBoxVal, theme.text]}>{formatPeso(dailyRate)} / day</Text>
+              {/* Cut-off Pay Input */}
+              <View style={styles.formFieldGroup}>
+                <Text style={[styles.fieldTitle, theme.subtext]}>Base Cut-off Salary (₱)</Text>
+                <TextInput
+                  style={[styles.textInputFull, theme.btnBg, theme.text]}
+                  value={cutoffBasePay}
+                  onChangeText={setCutoffBasePay}
+                  keyboardType="numeric"
+                  placeholder="10500"
+                />
               </View>
 
               {/* Cut-off Date Range */}
@@ -648,9 +629,17 @@ export default function App() {
                 </View>
               </View>
 
+              {/* Calculated Daily Rate Info */}
+              <View style={[styles.infoBox, theme.btnBg]}>
+                <Text style={[styles.infoBoxLabel, theme.subtext]}>Cut-off Daily Rate: </Text>
+                <Text style={[styles.infoBoxVal, theme.text]}>
+                  {formatPeso(dailyCutoffRate)} / day ({totalScheduledDays} work days)
+                </Text>
+              </View>
+
               {/* Attendance Table */}
               <Text style={[styles.fieldTitle, theme.subtext]}>
-                Daily Cut-off Schedule (Tap row to customize attendance)
+                Daily Cut-off Attendance (Tap row to edit attendance)
               </Text>
 
               <View style={styles.attList}>
@@ -686,9 +675,9 @@ export default function App() {
 
               {/* Calculated Net Result */}
               <View style={styles.calcSummaryBox}>
-                <Text style={styles.calcSummaryLabel}>CALCULATED CUT-OFF SALARY</Text>
+                <Text style={styles.calcSummaryLabel}>NET CUT-OFF PAY</Text>
                 <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
-                <Text style={styles.calcSummarySub}>Total Payable Work Days: {totalWorkedDays} days</Text>
+                <Text style={styles.calcSummarySub}>Attended: {totalAttendedDays} of {totalScheduledDays} Work Days</Text>
               </View>
 
               <TouchableOpacity style={styles.addExpenseBtn} onPress={applyCalculatedSalaryToCurrentDate}>
