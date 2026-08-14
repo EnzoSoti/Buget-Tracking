@@ -32,6 +32,46 @@ const getDayNameStr = (dateStr) => {
 const isSunday = (dateStr) => getDayNameStr(dateStr) === 'Sun';
 const isSaturday = (dateStr) => getDayNameStr(dateStr) === 'Sat';
 
+// Automatically calculate cut-off period start & end for any given date
+// Cut-off 1: 11th to 25th of same month
+// Cut-off 2: 26th of previous month to 10th of current month
+const getCutoffRangeForDate = (dateStr) => {
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    if (d >= 11 && d <= 25) {
+      const startM = String(m).padStart(2, '0');
+      return {
+        start: `${y}-${startM}-11`,
+        end: `${y}-${startM}-25`,
+        label: `Paycheck Cut-off: ${y}-${startM}-11 to ${y}-${startM}-25`
+      };
+    } else if (d >= 26) {
+      const curDate = new Date(y, m - 1, 26);
+      const nextDate = new Date(y, m, 10);
+      const startStr = getTodayString(curDate);
+      const endStr = getTodayString(nextDate);
+      return {
+        start: startStr,
+        end: endStr,
+        label: `Paycheck Cut-off: ${startStr} to ${endStr}`
+      };
+    } else {
+      // d <= 10
+      const prevDate = new Date(y, m - 2, 26);
+      const curDate = new Date(y, m - 1, 10);
+      const startStr = getTodayString(prevDate);
+      const endStr = getTodayString(curDate);
+      return {
+        start: startStr,
+        end: endStr,
+        label: `Paycheck Cut-off: ${startStr} to ${endStr}`
+      };
+    }
+  } catch (e) {
+    return { start: dateStr, end: dateStr, label: `Cut-off: ${dateStr}` };
+  }
+};
+
 // Generate array of date strings between start and end date (inclusive)
 const getDateRangeArray = (startStr, endStr) => {
   const dates = [];
@@ -63,13 +103,10 @@ export default function App() {
   // Date Selection State
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [expenseDate, setExpenseDate] = useState(getTodayString());
-  const [salaryInputVal, setSalaryInputVal] = useState('10500.00');
   
   // Cut-off Calculator State
   const [showCalculator, setShowCalculator] = useState(false);
   const [cutoffBasePay, setCutoffBasePay] = useState('10500'); // ₱10,500 per cut-off
-  const [cutoffStart, setCutoffStart] = useState('2026-07-26');
-  const [cutoffEnd, setCutoffEnd] = useState('2026-08-10');
   
   // Map of Date -> Attendance Status ('FULL', 'SAT_FULL', 'HALF', 'ABSENT', 'REST_DAY')
   const [attendanceMap, setAttendanceMap] = useState({});
@@ -87,6 +124,37 @@ export default function App() {
   const [editAmount, setEditAmount] = useState('');
   const [editDate, setEditDate] = useState(getTodayString());
 
+  // Detect cut-off range for selectedDate
+  const currentCutoff = getCutoffRangeForDate(selectedDate);
+  const rangeDates = getDateRangeArray(currentCutoff.start, currentCutoff.end);
+  const baseCutoffPay = parseFloat(cutoffBasePay) || 10500;
+
+  // Resolve status for a date (Saturdays = 1.0x Full pay, Sundays = 0x Rest day)
+  const getResolvedStatus = (dateStr) => {
+    if (attendanceMap[dateStr]) return attendanceMap[dateStr];
+    if (isSunday(dateStr)) return 'REST_DAY';
+    if (isSaturday(dateStr)) return 'SAT_FULL';
+    return 'FULL';
+  };
+
+  // Calculate cut-off pay for current cut-off range
+  let totalScheduledDays = 0;
+  let totalAttendedDays = 0;
+
+  rangeDates.forEach(d => {
+    const status = getResolvedStatus(d);
+    if (!isSunday(d)) totalScheduledDays += 1.0;
+    if (status === 'FULL' || status === 'SAT_FULL') totalAttendedDays += 1.0;
+    else if (status === 'HALF') totalAttendedDays += 0.5;
+    else if (status === 'ABSENT' || status === 'REST_DAY') totalAttendedDays += 0;
+  });
+
+  const dailyCutoffRate = totalScheduledDays > 0 ? baseCutoffPay / totalScheduledDays : 0;
+  const calculatedCutoffSalary = Math.round(totalAttendedDays * dailyCutoffRate * 100) / 100;
+
+  // Current active date's salary (auto-computed from current cut-off unless custom overridden)
+  const currentDateSalary = dailySalaries[selectedDate] ?? calculatedCutoffSalary;
+
   // Load Saved Data
   useEffect(() => {
     try {
@@ -95,8 +163,6 @@ export default function App() {
         const parsed = JSON.parse(saved);
         if (parsed.dailySalaries && typeof parsed.dailySalaries === 'object') {
           setDailySalaries(parsed.dailySalaries);
-        } else if (typeof parsed.salary === 'number') {
-          setDailySalaries({ [getTodayString()]: parsed.salary });
         }
         if (Array.isArray(parsed.expenses)) {
           setExpenses(parsed.expenses);
@@ -108,23 +174,13 @@ export default function App() {
           setAttendanceMap(parsed.attendanceMap);
         }
         if (parsed.cutoffBasePay) setCutoffBasePay(parsed.cutoffBasePay);
-        if (parsed.cutoffStart) setCutoffStart(parsed.cutoffStart);
-        if (parsed.cutoffEnd) setCutoffEnd(parsed.cutoffEnd);
-      } else {
-        setDailySalaries({ [getTodayString()]: 10500.00 });
       }
     } catch (e) {
       console.error(e);
     }
   }, []);
 
-  // Update Salary Input when Selected Date Changes
-  useEffect(() => {
-    const currentInc = dailySalaries[selectedDate] ?? (selectedDate === getTodayString() ? 10500.00 : 0);
-    setSalaryInputVal(currentInc > 0 ? currentInc.toString() : '');
-  }, [selectedDate, dailySalaries]);
-
-  // Save Data
+  // Save Data helper
   const saveData = (newDailySalaries, newExpenses, newIsDark, newAttMap = attendanceMap, extra = {}) => {
     try {
       localStorage.setItem('rn_daily_budget_data', JSON.stringify({
@@ -133,8 +189,6 @@ export default function App() {
         isDark: newIsDark,
         attendanceMap: newAttMap,
         cutoffBasePay,
-        cutoffStart,
-        cutoffEnd,
         ...extra
       }));
     } catch (e) {
@@ -162,9 +216,9 @@ export default function App() {
     setExpenseDate(newStr);
   };
 
-  // Save Income for Currently Selected Date
-  const handleUpdateSalary = () => {
-    const val = parseFloat(salaryInputVal);
+  // Save Manual Income for Currently Selected Date
+  const handleUpdateSalary = (valStr) => {
+    const val = parseFloat(valStr);
     const validVal = (!isNaN(val) && val >= 0) ? val : 0;
     
     const updatedSalaries = {
@@ -268,37 +322,6 @@ export default function App() {
     saveData(dailySalaries, expenses, next);
   };
 
-  // --- CUT-OFF SALARY CALCULATION LOGIC ---
-  const rangeDates = getDateRangeArray(cutoffStart, cutoffEnd);
-  const baseCutoffPay = parseFloat(cutoffBasePay) || 10500;
-
-  // Resolve status for a date (Saturdays = 1.0x Full pay, Sundays = 0x Rest day)
-  const getResolvedStatus = (dateStr) => {
-    if (attendanceMap[dateStr]) return attendanceMap[dateStr];
-    if (isSunday(dateStr)) return 'REST_DAY';
-    if (isSaturday(dateStr)) return 'SAT_FULL';
-    return 'FULL';
-  };
-
-  // Total scheduled work days in this cut-off period
-  let totalScheduledDays = 0;
-  let totalAttendedDays = 0;
-
-  rangeDates.forEach(d => {
-    const status = getResolvedStatus(d);
-    // Scheduled work days count (all non-Sundays)
-    if (!isSunday(d)) totalScheduledDays += 1.0;
-
-    // Attended days count
-    if (status === 'FULL' || status === 'SAT_FULL') totalAttendedDays += 1.0;
-    else if (status === 'HALF') totalAttendedDays += 0.5;
-    else if (status === 'ABSENT' || status === 'REST_DAY') totalAttendedDays += 0;
-  });
-
-  // Daily rate for this specific cut-off period
-  const dailyCutoffRate = totalScheduledDays > 0 ? baseCutoffPay / totalScheduledDays : 0;
-  const calculatedCutoffSalary = Math.round(totalAttendedDays * dailyCutoffRate * 100) / 100;
-
   // Cycle Attendance status when tapping a date row
   const toggleAttendanceStatus = (dateStr) => {
     const current = getResolvedStatus(dateStr);
@@ -310,24 +333,32 @@ export default function App() {
     else if (current === 'REST_DAY') nextStatus = 'FULL';
 
     const newAttMap = { ...attendanceMap, [dateStr]: nextStatus };
+    
+    // Automatically recalculate pay for this cut-off range and update dailySalaries
+    const range = getDateRangeArray(currentCutoff.start, currentCutoff.end);
+    let schedDays = 0;
+    let attDays = 0;
+    range.forEach(d => {
+      const st = newAttMap[d] || (isSunday(d) ? 'REST_DAY' : isSaturday(d) ? 'SAT_FULL' : 'FULL');
+      if (!isSunday(d)) schedDays += 1.0;
+      if (st === 'FULL' || st === 'SAT_FULL') attDays += 1.0;
+      else if (st === 'HALF') attDays += 0.5;
+    });
+
+    const newCalcSalary = Math.round((schedDays > 0 ? (baseCutoffPay / schedDays) * attDays : 0) * 100) / 100;
+    
+    // Clear manual overrides for dates in this cut-off so they auto-update live
+    const newDailySalaries = { ...dailySalaries };
+    range.forEach(d => {
+      delete newDailySalaries[d];
+    });
+
     setAttendanceMap(newAttMap);
-    saveData(dailySalaries, expenses, isDark, newAttMap);
+    setDailySalaries(newDailySalaries);
+    saveData(newDailySalaries, expenses, isDark, newAttMap);
   };
 
-  // Apply Calculated Cutoff Salary to Current Selected Date
-  const applyCalculatedSalaryToCurrentDate = () => {
-    const updatedSalaries = {
-      ...dailySalaries,
-      [selectedDate]: calculatedCutoffSalary
-    };
-    setDailySalaries(updatedSalaries);
-    setSalaryInputVal(calculatedCutoffSalary.toString());
-    saveData(updatedSalaries, expenses, isDark);
-    setShowCalculator(false);
-  };
-
-  // Current Selected Date's Income & Expenses
-  const currentDateSalary = dailySalaries[selectedDate] ?? (selectedDate === getTodayString() ? 10500.00 : 0);
+  // Current Selected Date's Expenses
   const dateExpenses = expenses.filter(exp => exp.date === selectedDate);
   const totalDateExpenses = dateExpenses.reduce((sum, item) => sum + item.amount, 0);
   
@@ -379,7 +410,7 @@ export default function App() {
         <View style={styles.topHeader}>
           <View>
             <Text style={[styles.mainTitle, theme.text]}>Budget Tracker</Text>
-            <Text style={[styles.mainSubtitle, theme.subtext]}>₱10,500 Semi-Monthly Cut-off Paycheck</Text>
+            <Text style={[styles.mainSubtitle, theme.subtext]}>Auto-Computed Cut-off Salary</Text>
           </View>
           <TouchableOpacity style={[styles.themePill, theme.card]} onPress={toggleTheme}>
             <Text style={styles.themeEmoji}>{isDark ? '☀️ Light' : '🌙 Dark'}</Text>
@@ -409,6 +440,13 @@ export default function App() {
             <TouchableOpacity style={[styles.dateNavBtn, theme.btnBg]} onPress={() => changeDateByDays(1)}>
               <Text style={[styles.dateNavBtnText, theme.text]}>Next ▶</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* Automatic Detected Cut-off Period Pill */}
+          <View style={[styles.cutoffDetectedPill, theme.btnBg]}>
+            <Text style={[styles.cutoffDetectedText, theme.text]}>
+              📅 {currentCutoff.start} to {currentCutoff.end}
+            </Text>
           </View>
 
           {selectedDate !== getTodayString() && (
@@ -459,12 +497,18 @@ export default function App() {
           </View>
         </View>
 
-        {/* Salary Input Card with Auto Calculator Trigger */}
+        {/* Auto-Computed Income Card */}
         <View style={[styles.simpleCard, theme.card]}>
           <View style={styles.salaryHeaderFlex}>
-            <Text style={[styles.sectionLabel, theme.subtext]}>INCOME FOR {selectedDate}</Text>
+            <View>
+              <Text style={[styles.sectionLabel, theme.subtext]}>AUTO-COMPUTED CUT-OFF PAY</Text>
+              <Text style={[{ fontSize: 11, fontWeight: '700' }, theme.subtext]}>
+                {currentCutoff.start} – {currentCutoff.end}
+              </Text>
+            </View>
+            
             <TouchableOpacity style={styles.calcTriggerBtn} onPress={() => setShowCalculator(true)}>
-              <Text style={styles.calcTriggerBtnText}>🧮 Compute Cut-off Pay</Text>
+              <Text style={styles.calcTriggerBtnText}>📅 Attendance Sheet</Text>
             </TouchableOpacity>
           </View>
 
@@ -472,14 +516,14 @@ export default function App() {
             <Text style={styles.pesoSymbol}>₱</Text>
             <TextInput
               style={[styles.salaryTextInput, theme.text]}
-              value={salaryInputVal}
-              onChangeText={setSalaryInputVal}
+              value={currentDateSalary.toString()}
+              onChangeText={(txt) => handleUpdateSalary(txt)}
               keyboardType="numeric"
               placeholder="10500.00"
               placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
             />
-            <TouchableOpacity style={styles.actionSaveBtn} onPress={handleUpdateSalary}>
-              <Text style={styles.actionSaveText}>Save</Text>
+            <TouchableOpacity style={styles.actionSaveBtn} onPress={() => handleUpdateSalary(currentDateSalary.toString())}>
+              <Text style={styles.actionSaveText}>Saved</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -570,16 +614,16 @@ export default function App() {
           </View>
         </View>
 
-        <Text style={[styles.pageFooterText, theme.subtext]}>Salary Budget Tracker &bull; ₱10,500 Cut-off Manager</Text>
+        <Text style={[styles.pageFooterText, theme.subtext]}>Salary Budget Tracker &bull; Instant Auto-Cutoff Payroll</Text>
 
       </ScrollView>
 
-      {/* Paycheck Cut-Off Salary Auto-Calculator Modal */}
+      {/* Paycheck Cut-Off Attendance Modal */}
       <Modal visible={showCalculator} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalBox, theme.card, { maxHeight: '90%' }]}>
             <View style={styles.modalTopRow}>
-              <Text style={[styles.modalHeading, theme.text]}>🧮 Cut-off Salary Calculator</Text>
+              <Text style={[styles.modalHeading, theme.text]}>📅 Cut-off Attendance Sheet</Text>
               <TouchableOpacity onPress={() => setShowCalculator(false)}>
                 <Text style={[styles.modalCloseX, theme.subtext]}>✕</Text>
               </TouchableOpacity>
@@ -589,47 +633,27 @@ export default function App() {
               {/* Schedule Info Banner */}
               <View style={[styles.scheduleBanner, theme.btnBg]}>
                 <Text style={[styles.scheduleBannerText, theme.text]}>
-                  💵 Monthly Net: ₱21,000.00 &bull; Cut-off Net: ₱10,500.00{"\n"}
-                  📅 Saturdays = Halfday (Full Pay 1.0x) | Sundays = Rest Day (No work 0x)
+                  💵 Cut-off Period: {currentCutoff.start} to {currentCutoff.end}{"\n"}
+                  📅 Saturdays = Halfday (Full Pay 1.0x) | Sundays = Rest Day (0x)
                 </Text>
               </View>
 
-              {/* Cut-off Pay Input */}
+              {/* Cut-off Base Pay Input */}
               <View style={styles.formFieldGroup}>
                 <Text style={[styles.fieldTitle, theme.subtext]}>Base Cut-off Salary (₱)</Text>
                 <TextInput
                   style={[styles.textInputFull, theme.btnBg, theme.text]}
                   value={cutoffBasePay}
-                  onChangeText={setCutoffBasePay}
+                  onChangeText={(val) => {
+                    setCutoffBasePay(val);
+                    saveData(dailySalaries, expenses, isDark, attendanceMap, { cutoffBasePay: val });
+                  }}
                   keyboardType="numeric"
                   placeholder="10500"
                 />
               </View>
 
-              {/* Cut-off Date Range */}
-              <Text style={[styles.fieldTitle, theme.subtext]}>Cut-off Date Range</Text>
-              <View style={styles.twoColumnGrid}>
-                <View style={styles.gridColumn}>
-                  <Text style={[styles.fieldTitle, theme.subtext]}>Start Date</Text>
-                  <input
-                    type="date"
-                    style={compactDateInputStyle}
-                    value={cutoffStart}
-                    onChange={(e) => setCutoffStart(e.target.value)}
-                  />
-                </View>
-                <View style={styles.gridColumn}>
-                  <Text style={[styles.fieldTitle, theme.subtext]}>End Date</Text>
-                  <input
-                    type="date"
-                    style={compactDateInputStyle}
-                    value={cutoffEnd}
-                    onChange={(e) => setCutoffEnd(e.target.value)}
-                  />
-                </View>
-              </View>
-
-              {/* Calculated Daily Rate Info */}
+              {/* Daily Rate Info */}
               <View style={[styles.infoBox, theme.btnBg]}>
                 <Text style={[styles.infoBoxLabel, theme.subtext]}>Cut-off Daily Rate: </Text>
                 <Text style={[styles.infoBoxVal, theme.text]}>
@@ -639,21 +663,27 @@ export default function App() {
 
               {/* Attendance Table */}
               <Text style={[styles.fieldTitle, theme.subtext]}>
-                Daily Cut-off Attendance (Tap row to edit attendance)
+                Daily Attendance (Tap any row to toggle Full/Halfday/Absent)
               </Text>
 
               <View style={styles.attList}>
                 {rangeDates.map(dateStr => {
                   const status = getResolvedStatus(dateStr);
                   const dayName = getDayNameStr(dateStr);
+                  const isSelectedDateRow = dateStr === selectedDate;
+
                   return (
                     <TouchableOpacity
                       key={dateStr}
-                      style={[styles.attRow, theme.btnBg]}
+                      style={[
+                        styles.attRow,
+                        theme.btnBg,
+                        isSelectedDateRow && styles.attRowSelected
+                      ]}
                       onPress={() => toggleAttendanceStatus(dateStr)}
                     >
                       <Text style={[styles.attDateText, theme.text]}>
-                        📅 {dateStr} ({dayName})
+                        {isSelectedDateRow ? '👉 ' : ''}📅 {dateStr} ({dayName})
                       </Text>
                       
                       <View style={[
@@ -675,14 +705,14 @@ export default function App() {
 
               {/* Calculated Net Result */}
               <View style={styles.calcSummaryBox}>
-                <Text style={styles.calcSummaryLabel}>NET CUT-OFF PAY</Text>
+                <Text style={styles.calcSummaryLabel}>NET COMPUTE SALARY FOR THIS CUT-OFF</Text>
                 <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
                 <Text style={styles.calcSummarySub}>Attended: {totalAttendedDays} of {totalScheduledDays} Work Days</Text>
               </View>
 
-              <TouchableOpacity style={styles.addExpenseBtn} onPress={applyCalculatedSalaryToCurrentDate}>
+              <TouchableOpacity style={styles.addExpenseBtn} onPress={() => setShowCalculator(false)}>
                 <Text style={styles.addExpenseBtnText}>
-                  ✓ Apply {formatPeso(calculatedCutoffSalary)} to {selectedDate}
+                  ✓ Done ({formatPeso(calculatedCutoffSalary)} Active)
                 </Text>
               </TouchableOpacity>
             </ScrollView>
@@ -787,6 +817,18 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.8,
   },
+  cutoffDetectedPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
+  cutoffDetectedText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
   salaryHeaderFlex: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -797,7 +839,7 @@ const styles = StyleSheet.create({
   calcTriggerBtn: {
     backgroundColor: '#3b82f6',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: 14,
   },
   calcTriggerBtnText: {
@@ -1030,7 +1072,7 @@ const styles = StyleSheet.create({
   },
   attList: {
     gap: 6,
-    maxHeight: 220,
+    maxHeight: 240,
     overflowY: 'auto',
   },
   attRow: {
@@ -1042,6 +1084,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 8,
     flexWrap: 'wrap',
+  },
+  attRowSelected: {
+    borderColor: '#3b82f6',
+    borderWidth: 2,
   },
   attDateText: {
     fontSize: 13,
