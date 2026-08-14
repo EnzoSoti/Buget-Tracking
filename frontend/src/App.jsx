@@ -18,17 +18,48 @@ const getTodayString = (d = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
+// Generate array of date strings between start and end date (inclusive)
+const getDateRangeArray = (startStr, endStr) => {
+  const dates = [];
+  try {
+    const [sY, sM, sD] = startStr.split('-').map(Number);
+    const [eY, eM, eD] = endStr.split('-').map(Number);
+    
+    let cur = new Date(sY, sM - 1, sD);
+    const end = new Date(eY, eM - 1, eD);
+    
+    while (cur <= end && dates.length < 60) {
+      const year = cur.getFullYear();
+      const month = String(cur.getMonth() + 1).padStart(2, '0');
+      const day = String(cur.getDate()).padStart(2, '0');
+      dates.push(`${year}-${month}-${day}`);
+      cur.setDate(cur.getDate() + 1);
+    }
+  } catch (e) {
+    console.error(e);
+  }
+  return dates;
+};
+
 export default function App() {
-  // Map of Date -> Income Amount (e.g. { "2026-08-14": 11153.80 })
+  // Map of Date -> Income Amount
   const [dailySalaries, setDailySalaries] = useState({});
   const [expenses, setExpenses] = useState([]);
   
   // Date Selection State
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [expenseDate, setExpenseDate] = useState(getTodayString());
+  const [salaryInputVal, setSalaryInputVal] = useState('21000.00');
   
-  // Income Input State for currently selected date
-  const [salaryInputVal, setSalaryInputVal] = useState('11153.80');
+  // Cut-off Calculator State
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [monthlyRate, setMonthlyRate] = useState('21000');
+  const [workingDaysInMonth, setWorkingDaysInMonth] = useState('22');
+  const [cutoffStart, setCutoffStart] = useState('2026-07-26');
+  const [cutoffEnd, setCutoffEnd] = useState('2026-08-10');
+  
+  // Map of Date -> Attendance Status ('FULL' = 1.0, 'HALF' = 0.5, 'ABSENT' = 0)
+  const [attendanceMap, setAttendanceMap] = useState({});
   
   // Form State
   const [name, setName] = useState('');
@@ -61,10 +92,16 @@ export default function App() {
         if (typeof parsed.isDark === 'boolean') {
           setIsDark(parsed.isDark);
         }
+        if (parsed.attendanceMap) {
+          setAttendanceMap(parsed.attendanceMap);
+        }
+        if (parsed.monthlyRate) setMonthlyRate(parsed.monthlyRate);
+        if (parsed.workingDaysInMonth) setWorkingDaysInMonth(parsed.workingDaysInMonth);
+        if (parsed.cutoffStart) setCutoffStart(parsed.cutoffStart);
+        if (parsed.cutoffEnd) setCutoffEnd(parsed.cutoffEnd);
       } else {
         // Default initial salary for today
-        const initialMap = { [getTodayString()]: 11153.80 };
-        setDailySalaries(initialMap);
+        setDailySalaries({ [getTodayString()]: 21000.00 });
       }
     } catch (e) {
       console.error(e);
@@ -73,17 +110,23 @@ export default function App() {
 
   // Update Salary Input when Selected Date Changes
   useEffect(() => {
-    const currentInc = dailySalaries[selectedDate] ?? (selectedDate === getTodayString() ? 11153.80 : 0);
+    const currentInc = dailySalaries[selectedDate] ?? (selectedDate === getTodayString() ? 21000.00 : 0);
     setSalaryInputVal(currentInc > 0 ? currentInc.toString() : '');
   }, [selectedDate, dailySalaries]);
 
   // Save Data
-  const saveData = (newDailySalaries, newExpenses, newIsDark) => {
+  const saveData = (newDailySalaries, newExpenses, newIsDark, newAttMap = attendanceMap, extra = {}) => {
     try {
       localStorage.setItem('rn_daily_budget_data', JSON.stringify({
         dailySalaries: newDailySalaries,
         expenses: newExpenses,
-        isDark: newIsDark
+        isDark: newIsDark,
+        attendanceMap: newAttMap,
+        monthlyRate,
+        workingDaysInMonth,
+        cutoffStart,
+        cutoffEnd,
+        ...extra
       }));
     } catch (e) {
       console.error(e);
@@ -159,7 +202,7 @@ export default function App() {
     setEditDate(item.date || selectedDate);
   };
 
-  // Save Edit
+  // Save Edit Modal
   const handleSaveEdit = () => {
     const amt = parseFloat(editAmount);
     if (!editName.trim() || isNaN(amt) || amt <= 0 || !editItem) return;
@@ -184,7 +227,7 @@ export default function App() {
   // Clear All
   const handleClearAll = () => {
     if (expenses.length === 0) return;
-    if (confirm(`Clear all recorded expenses?`)) {
+    if (confirm('Clear all recorded expenses?')) {
       setExpenses([]);
       saveData(dailySalaries, [], isDark);
     }
@@ -216,8 +259,50 @@ export default function App() {
     saveData(dailySalaries, expenses, next);
   };
 
+  // --- CUT-OFF SALARY CALCULATION LOGIC ---
+  const rangeDates = getDateRangeArray(cutoffStart, cutoffEnd);
+  const baseMonthly = parseFloat(monthlyRate) || 0;
+  const workDaysCount = parseFloat(workingDaysInMonth) || 22;
+  const dailyRate = workDaysCount > 0 ? baseMonthly / workDaysCount : 0;
+
+  // Calculate total days worked in range based on attendance
+  let totalWorkedDays = 0;
+  rangeDates.forEach(d => {
+    const status = attendanceMap[d] || 'FULL';
+    if (status === 'FULL') totalWorkedDays += 1.0;
+    else if (status === 'HALF') totalWorkedDays += 0.5;
+    else if (status === 'ABSENT') totalWorkedDays += 0;
+  });
+
+  const calculatedCutoffSalary = Math.round(totalWorkedDays * dailyRate * 100) / 100;
+
+  // Toggle Attendance status for a specific date in range
+  const toggleAttendanceStatus = (dateStr) => {
+    const current = attendanceMap[dateStr] || 'FULL';
+    let nextStatus = 'FULL';
+    if (current === 'FULL') nextStatus = 'HALF';
+    else if (current === 'HALF') nextStatus = 'ABSENT';
+    else if (current === 'ABSENT') nextStatus = 'FULL';
+
+    const newAttMap = { ...attendanceMap, [dateStr]: nextStatus };
+    setAttendanceMap(newAttMap);
+    saveData(dailySalaries, expenses, isDark, newAttMap);
+  };
+
+  // Apply Calculated Cutoff Salary to Current Selected Date
+  const applyCalculatedSalaryToCurrentDate = () => {
+    const updatedSalaries = {
+      ...dailySalaries,
+      [selectedDate]: calculatedCutoffSalary
+    };
+    setDailySalaries(updatedSalaries);
+    setSalaryInputVal(calculatedCutoffSalary.toString());
+    saveData(updatedSalaries, expenses, isDark);
+    setShowCalculator(false);
+  };
+
   // Current Selected Date's Income & Expenses
-  const currentDateSalary = dailySalaries[selectedDate] ?? (selectedDate === getTodayString() ? 11153.80 : 0);
+  const currentDateSalary = dailySalaries[selectedDate] ?? (selectedDate === getTodayString() ? 21000.00 : 0);
   const dateExpenses = expenses.filter(exp => exp.date === selectedDate);
   const totalDateExpenses = dateExpenses.reduce((sum, item) => sum + item.amount, 0);
   
@@ -269,7 +354,7 @@ export default function App() {
         <View style={styles.topHeader}>
           <View>
             <Text style={[styles.mainTitle, theme.text]}>Budget Tracker</Text>
-            <Text style={[styles.mainSubtitle, theme.subtext]}>Daily Income & Expense Manager</Text>
+            <Text style={[styles.mainSubtitle, theme.subtext]}>Paycheck & Attendance Auto-Calculator</Text>
           </View>
           <TouchableOpacity style={[styles.themePill, theme.card]} onPress={toggleTheme}>
             <Text style={styles.themeEmoji}>{isDark ? '☀️ Light' : '🌙 Dark'}</Text>
@@ -315,7 +400,7 @@ export default function App() {
           )}
         </View>
 
-        {/* Primary Remaining Balance Highlight Card for Selected Date */}
+        {/* Primary Remaining Balance Highlight Card */}
         <View style={[
           styles.mainBalanceCard,
           remainingForDate < 0 || spentPctForDate > 90 ? styles.cardDanger :
@@ -349,9 +434,15 @@ export default function App() {
           </View>
         </View>
 
-        {/* Income / Salary Input Card FOR THE SELECTED DATE */}
+        {/* Salary Input Card with Auto Calculator Trigger */}
         <View style={[styles.simpleCard, theme.card]}>
-          <Text style={[styles.sectionLabel, theme.subtext]}>SET INCOME FOR {selectedDate}</Text>
+          <View style={styles.salaryHeaderFlex}>
+            <Text style={[styles.sectionLabel, theme.subtext]}>INCOME FOR {selectedDate}</Text>
+            <TouchableOpacity style={styles.calcTriggerBtn} onPress={() => setShowCalculator(true)}>
+              <Text style={styles.calcTriggerBtnText}>🧮 Auto-Compute Salary</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={[styles.inputBox, theme.btnBg]}>
             <Text style={styles.pesoSymbol}>₱</Text>
             <TextInput
@@ -454,9 +545,122 @@ export default function App() {
           </View>
         </View>
 
-        <Text style={[styles.pageFooterText, theme.subtext]}>Salary Budget Tracker &bull; Per-Date Income Records</Text>
+        <Text style={[styles.pageFooterText, theme.subtext]}>Salary Budget Tracker &bull; Auto Cut-off Calculator</Text>
 
       </ScrollView>
+
+      {/* Paycheck Cut-Off Salary Auto-Calculator Modal */}
+      <Modal visible={showCalculator} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalBox, theme.card, { maxHeight: '90%' }]}>
+            <View style={styles.modalTopRow}>
+              <Text style={[styles.modalHeading, theme.text]}>🧮 Cut-off Salary Calculator</Text>
+              <TouchableOpacity onPress={() => setShowCalculator(false)}>
+                <Text style={[styles.modalCloseX, theme.subtext]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ gap: 12 }}>
+              {/* Monthly Rate & Days */}
+              <View style={styles.twoColumnGrid}>
+                <View style={styles.gridColumn}>
+                  <Text style={[styles.fieldTitle, theme.subtext]}>Base Monthly Salary (₱)</Text>
+                  <TextInput
+                    style={[styles.textInputFull, theme.btnBg, theme.text]}
+                    value={monthlyRate}
+                    onChangeText={setMonthlyRate}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={styles.gridColumn}>
+                  <Text style={[styles.fieldTitle, theme.subtext]}>Work Days in Month</Text>
+                  <TextInput
+                    style={[styles.textInputFull, theme.btnBg, theme.text]}
+                    value={workingDaysInMonth}
+                    onChangeText={setWorkingDaysInMonth}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              {/* Calculated Daily Rate Info */}
+              <View style={[styles.infoBox, theme.btnBg]}>
+                <Text style={[styles.infoBoxLabel, theme.subtext]}>Daily Rate: </Text>
+                <Text style={[styles.infoBoxVal, theme.text]}>{formatPeso(dailyRate)} / day</Text>
+              </View>
+
+              {/* Cut-off Date Range */}
+              <Text style={[styles.fieldTitle, theme.subtext]}>Cut-off Date Range</Text>
+              <View style={styles.twoColumnGrid}>
+                <View style={styles.gridColumn}>
+                  <Text style={[styles.fieldTitle, theme.subtext]}>Start Date</Text>
+                  <input
+                    type="date"
+                    style={compactDateInputStyle}
+                    value={cutoffStart}
+                    onChange={(e) => setCutoffStart(e.target.value)}
+                  />
+                </View>
+                <View style={styles.gridColumn}>
+                  <Text style={[styles.fieldTitle, theme.subtext]}>End Date</Text>
+                  <input
+                    type="date"
+                    style={compactDateInputStyle}
+                    value={cutoffEnd}
+                    onChange={(e) => setCutoffEnd(e.target.value)}
+                  />
+                </View>
+              </View>
+
+              {/* Attendance Table (Full day, Half day, Absent) */}
+              <Text style={[styles.fieldTitle, theme.subtext]}>
+                Custom Attendance per Date (Tap to toggle status)
+              </Text>
+              <Text style={[{ fontSize: 11 }, theme.subtext]}>
+                🟢 Full Day (1.0) &bull; 🟡 Half Day (0.5) &bull; 🔴 Absent (0.0)
+              </Text>
+
+              <View style={styles.attList}>
+                {rangeDates.map(dateStr => {
+                  const status = attendanceMap[dateStr] || 'FULL';
+                  return (
+                    <TouchableOpacity
+                      key={dateStr}
+                      style={[styles.attRow, theme.btnBg]}
+                      onPress={() => toggleAttendanceStatus(dateStr)}
+                    >
+                      <Text style={[styles.attDateText, theme.text]}>📅 {dateStr}</Text>
+                      <View style={[
+                        styles.attBadge,
+                        status === 'FULL' ? styles.attFull :
+                        status === 'HALF' ? styles.attHalf : styles.attAbsent
+                      ]}>
+                        <Text style={styles.attBadgeText}>
+                          {status === 'FULL' ? '🟢 Full Day (1.0x)' :
+                           status === 'HALF' ? '🟡 Half Day (0.5x)' : '🔴 Absent (0x)'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Calculated Net Result */}
+              <View style={styles.calcSummaryBox}>
+                <Text style={styles.calcSummaryLabel}>CALCULATED CUT-OFF SALARY</Text>
+                <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
+                <Text style={styles.calcSummarySub}>Total Work Days Earned: {totalWorkedDays} days</Text>
+              </View>
+
+              <TouchableOpacity style={styles.addExpenseBtn} onPress={applyCalculatedSalaryToCurrentDate}>
+                <Text style={styles.addExpenseBtnText}>
+                  ✓ Apply {formatPeso(calculatedCutoffSalary)} to {selectedDate}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Edit Modal */}
       <Modal visible={!!editItem} transparent animationType="fade">
@@ -554,6 +758,24 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.8,
+  },
+  salaryHeaderFlex: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  calcTriggerBtn: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+  },
+  calcTriggerBtnText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '800',
   },
   cardHeaderFlexRow: {
     flexDirection: 'row',
@@ -728,6 +950,16 @@ const styles = StyleSheet.create({
     outlineStyle: 'none',
     width: '100%',
   },
+  twoColumnGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  gridColumn: {
+    flex: 1,
+    minWidth: 130,
+    gap: 4,
+  },
   addExpenseBtn: {
     backgroundColor: '#3b82f6',
     height: 46,
@@ -740,6 +972,76 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '800',
     fontSize: 15,
+  },
+
+  /* Attendance Calculator Styles */
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  infoBoxLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  infoBoxVal: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  attList: {
+    gap: 6,
+    maxHeight: 220,
+    overflowY: 'auto',
+  },
+  attRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  attDateText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  attBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  attFull: { backgroundColor: 'rgba(16, 185, 129, 0.2)' },
+  attHalf: { backgroundColor: 'rgba(245, 158, 11, 0.2)' },
+  attAbsent: { backgroundColor: 'rgba(239, 68, 68, 0.2)' },
+  attBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  calcSummaryBox: {
+    backgroundColor: '#059669',
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    gap: 2,
+  },
+  calcSummaryLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: 'rgba(255, 255, 255, 0.85)',
+    letterSpacing: 1,
+  },
+  calcSummaryVal: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#ffffff',
+  },
+  calcSummarySub: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontWeight: '600',
   },
 
   /* Expense List */
@@ -836,7 +1138,7 @@ const styles = StyleSheet.create({
   },
   modalBox: {
     width: '100%',
-    maxWidth: 420,
+    maxWidth: 440,
     borderRadius: 16,
     padding: 20,
     gap: 12,
