@@ -4,6 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Salary Budget Tracker</title>
+
+  <!-- Auto-healing listener for stale Vite bundle hashes -->
+  <script>
+    window.addEventListener('error', function (e) {
+      if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+        console.warn('Asset 404 detected. Purging caches & reloading for latest update...');
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            names.forEach(function(name) { caches.delete(name); });
+          });
+        }
+        setTimeout(function() {
+          window.location.reload(true);
+        }, 500);
+      }
+    }, true);
+  </script>
   
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">

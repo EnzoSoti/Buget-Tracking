@@ -1,11 +1,9 @@
-const CACHE_NAME = 'budget-tracker-v4';
+const CACHE_NAME = 'budget-tracker-v5';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/app_logo.jpg',
-  '/icon-192.png',
-  '/icon-512.png'
+  '/app_logo.jpg'
 ];
 
 self.addEventListener('install', (e) => {
@@ -50,7 +48,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Cache-First strategy for static assets
+  // Cache-First strategy with fallback for static assets
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
@@ -61,7 +59,7 @@ self.addEventListener('fetch', (e) => {
         }
         return networkResponse;
       }).catch((err) => {
-        console.error('Fetch error:', err);
+        console.error('Fetch error for asset:', err);
       });
     })
   );
