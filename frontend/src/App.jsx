@@ -35,11 +35,11 @@ export default function App() {
   const [salaryInputVal, setSalaryInputVal] = useState('11153.80');
   const [expenses, setExpenses] = useState([]);
   
-  // Date Selection State (Default to Today YYYY-MM-DD)
+  // Date Selection State
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [expenseDate, setExpenseDate] = useState(getTodayString());
   
-  // New Expense Form State
+  // Form State
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('Food');
@@ -224,7 +224,7 @@ export default function App() {
   const dateExpenses = expenses.filter(exp => exp.date === selectedDate);
   const totalDateExpenses = dateExpenses.reduce((sum, item) => sum + item.amount, 0);
 
-  // Overall Total Expenses across all dates
+  // Overall Total Expenses
   const totalAllExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
   const remaining = salary - totalAllExpenses;
   const spentPct = salary > 0 ? Math.min(Math.round((totalAllExpenses / salary) * 100), 999) : 0;
@@ -234,8 +234,42 @@ export default function App() {
     ? dateExpenses
     : dateExpenses.filter(exp => exp.category === filterCat);
 
-  // Theme Styles
+  // Dynamic Theme Colors
   const theme = isDark ? darkTheme : lightTheme;
+
+  // Date input inline style for full responsiveness
+  const responsiveDateInputStyle = {
+    flex: '1 1 140px',
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box',
+    backgroundColor: isDark ? '#0f172a' : '#f8fafc',
+    color: isDark ? '#f8fafc' : '#0f172a',
+    border: `1.5px solid ${isDark ? '#334155' : '#cbd5e1'}`,
+    borderRadius: '10px',
+    padding: '10px 12px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    fontFamily: 'inherit',
+    outline: 'none',
+    minHeight: '44px',
+    cursor: 'pointer'
+  };
+
+  const responsiveSelectStyle = {
+    width: '100%',
+    boxSizing: 'border-box',
+    backgroundColor: isDark ? '#0f172a' : '#f8fafc',
+    color: isDark ? '#f8fafc' : '#0f172a',
+    border: `1.5px solid ${isDark ? '#334155' : '#cbd5e1'}`,
+    borderRadius: '10px',
+    padding: '10px 12px',
+    fontSize: '14px',
+    fontFamily: 'inherit',
+    outline: 'none',
+    minHeight: '44px',
+    cursor: 'pointer'
+  };
 
   return (
     <SafeAreaView style={[styles.container, theme.container]}>
@@ -246,9 +280,9 @@ export default function App() {
         <View style={[styles.card, theme.card, styles.headerRow]}>
           <View style={styles.brandRow}>
             <Text style={styles.logoEmoji}>💰</Text>
-            <View>
+            <View style={styles.titleWrapper}>
               <Text style={[styles.title, theme.text]}>Salary Budget Tracker</Text>
-              <Text style={[styles.subtitle, theme.subtext]}>Date-Based Records &bull; Vercel Ready</Text>
+              <Text style={[styles.subtitle, theme.subtext]}>Super Responsive &bull; React Native</Text>
             </View>
           </View>
           <TouchableOpacity style={[styles.themeBtn, theme.themeBtn]} onPress={toggleTheme}>
@@ -256,29 +290,18 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-        {/* Date Selector Navigation Bar */}
-        <View style={[styles.card, theme.card, styles.dateNavCard]}>
+        {/* Super Responsive Date Selector Card */}
+        <View style={[styles.card, theme.card]}>
           <Text style={[styles.cardHeader, theme.text]}>📅 Select Date to View Records</Text>
           
-          <View style={styles.datePickerRow}>
+          <View style={styles.datePickerContainer}>
             <TouchableOpacity style={[styles.navBtn, theme.inputBg]} onPress={() => changeDateByDays(-1)}>
               <Text style={[styles.navBtnText, theme.text]}>◀ Prev Day</Text>
             </TouchableOpacity>
 
             <input
               type="date"
-              style={{
-                backgroundColor: isDark ? '#0f172a' : '#f8fafc',
-                color: isDark ? '#f8fafc' : '#0f172a',
-                border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                borderRadius: 8,
-                padding: '8px 12px',
-                fontSize: 14,
-                fontWeight: 'bold',
-                fontFamily: 'inherit',
-                outline: 'none',
-                cursor: 'pointer'
-              }}
+              style={responsiveDateInputStyle}
               value={selectedDate}
               onChange={(e) => {
                 if (e.target.value) {
@@ -336,7 +359,7 @@ export default function App() {
               <Text style={[styles.balValue, theme.text]}>{formatPeso(salary)}</Text>
             </View>
             <View style={[styles.balBox, theme.inputBg]}>
-              <Text style={[styles.balLabel, theme.subtext]}>Expenses on ({selectedDate})</Text>
+              <Text style={[styles.balLabel, theme.subtext]}>Expenses ({selectedDate})</Text>
               <Text style={[styles.balValue, styles.redText]}>{formatPeso(totalDateExpenses)}</Text>
             </View>
           </View>
@@ -387,16 +410,7 @@ export default function App() {
             <Text style={[styles.fieldLabel, theme.subtext]}>Expense Date</Text>
             <input
               type="date"
-              style={{
-                backgroundColor: isDark ? '#0f172a' : '#f8fafc',
-                color: isDark ? '#f8fafc' : '#0f172a',
-                border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                borderRadius: 8,
-                padding: '8px 12px',
-                fontSize: 14,
-                outline: 'none',
-                width: '100%'
-              }}
+              style={responsiveDateInputStyle}
               value={expenseDate}
               onChange={(e) => setExpenseDate(e.target.value)}
             />
@@ -426,16 +440,18 @@ export default function App() {
           </ScrollView>
 
           {/* Form Fields */}
-          <Text style={[styles.fieldLabel, theme.subtext]}>Expense Description</Text>
-          <TextInput
-            style={[styles.input, theme.inputBg, theme.text]}
-            placeholder="e.g. Electric Bill, Rice..."
-            placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-            value={name}
-            onChangeText={setName}
-          />
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, theme.subtext]}>Expense Description</Text>
+            <TextInput
+              style={[styles.input, theme.inputBg, theme.text]}
+              placeholder="e.g. Electric Bill, Rice..."
+              placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+              value={name}
+              onChangeText={setName}
+            />
+          </View>
 
-          <View style={styles.formRow}>
+          <View style={styles.responsiveFormGrid}>
             <View style={styles.flex1}>
               <Text style={[styles.fieldLabel, theme.subtext]}>Amount (₱)</Text>
               <TextInput
@@ -451,15 +467,7 @@ export default function App() {
             <View style={styles.flex1}>
               <Text style={[styles.fieldLabel, theme.subtext]}>Category</Text>
               <select
-                style={{
-                  backgroundColor: isDark ? '#0f172a' : '#f8fafc',
-                  color: isDark ? '#f8fafc' : '#0f172a',
-                  border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                  borderRadius: 8,
-                  padding: 10,
-                  fontSize: 14,
-                  outline: 'none'
-                }}
+                style={responsiveSelectStyle}
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
@@ -486,10 +494,11 @@ export default function App() {
                 backgroundColor: isDark ? '#0f172a' : '#f8fafc',
                 color: isDark ? '#f8fafc' : '#0f172a',
                 border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                borderRadius: 6,
-                padding: '4px 8px',
-                fontSize: 12,
-                outline: 'none'
+                borderRadius: 8,
+                padding: '6px 10px',
+                fontSize: 13,
+                outline: 'none',
+                cursor: 'pointer'
               }}
               value={filterCat}
               onChange={(e) => setFilterCat(e.target.value)}
@@ -512,7 +521,7 @@ export default function App() {
                 <View key={item.id} style={[styles.itemRow, theme.inputBg]}>
                   <View style={styles.itemLeft}>
                     <Text style={styles.itemEmoji}>{catInfo.emoji}</Text>
-                    <View>
+                    <View style={styles.itemTextWrapper}>
                       <Text style={[styles.itemTitle, theme.text]}>{item.name}</Text>
                       <Text style={[styles.itemSub, theme.subtext]}>{catInfo.label} &bull; 📅 {item.date}</Text>
                     </View>
@@ -521,10 +530,10 @@ export default function App() {
                   <View style={styles.itemRight}>
                     <Text style={styles.itemAmount}>-{formatPeso(item.amount)}</Text>
                     <TouchableOpacity onPress={() => openEdit(item)} style={styles.actionBtn}>
-                      <Text>✏️</Text>
+                      <Text style={{ fontSize: 16 }}>✏️</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.actionBtn}>
-                      <Text>🗑️</Text>
+                      <Text style={{ fontSize: 16 }}>🗑️</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -543,7 +552,7 @@ export default function App() {
           </View>
         </View>
 
-        <Text style={[styles.footerText, theme.subtext]}>React Native Budget Tracker &bull; Date Records Stored</Text>
+        <Text style={[styles.footerText, theme.subtext]}>React Native Budget Tracker &bull; Super Responsive</Text>
 
       </ScrollView>
 
@@ -561,15 +570,7 @@ export default function App() {
             <Text style={[styles.fieldLabel, theme.subtext]}>Date</Text>
             <input
               type="date"
-              style={{
-                backgroundColor: isDark ? '#0f172a' : '#f8fafc',
-                color: isDark ? '#f8fafc' : '#0f172a',
-                border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                borderRadius: 8,
-                padding: 8,
-                fontSize: 14,
-                outline: 'none'
-              }}
+              style={responsiveDateInputStyle}
               value={editDate}
               onChange={(e) => setEditDate(e.target.value)}
             />
@@ -591,15 +592,7 @@ export default function App() {
 
             <Text style={[styles.fieldLabel, theme.subtext]}>Category</Text>
             <select
-              style={{
-                backgroundColor: isDark ? '#0f172a' : '#f8fafc',
-                color: isDark ? '#f8fafc' : '#0f172a',
-                border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                borderRadius: 8,
-                padding: 10,
-                fontSize: 14,
-                outline: 'none'
-              }}
+              style={responsiveSelectStyle}
               value={editCategory}
               onChange={(e) => setEditCategory(e.target.value)}
             >
@@ -625,17 +618,17 @@ export default function App() {
   );
 }
 
-// StyleSheet
+// Ultra Responsive StyleSheet
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   scrollContent: {
-    padding: 14,
+    padding: 12,
     maxWidth: 540,
     width: '100%',
     alignSelf: 'center',
-    gap: 14,
+    gap: 12,
   },
   card: {
     borderRadius: 14,
@@ -643,33 +636,33 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 12,
   },
-  dateNavCard: {
-    alignItems: 'stretch',
-  },
-  datePickerRow: {
+  datePickerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 6,
+    gap: 8,
     flexWrap: 'wrap',
   },
   navBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
     borderWidth: 1,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   navBtnText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   todayQuickRow: {
     marginTop: 4,
     alignItems: 'center',
   },
   todayChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
   },
@@ -680,17 +673,24 @@ const styles = StyleSheet.create({
   todayChipTextActive: {
     color: '#ffffff',
     fontWeight: '800',
-    fontSize: 12,
+    fontSize: 13,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
+    minWidth: 180,
+  },
+  titleWrapper: {
+    flex: 1,
   },
   logoEmoji: {
     fontSize: 32,
@@ -703,15 +703,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   themeBtn: {
-    width: 38,
-    height: 38,
+    width: 42,
+    height: 42,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
   },
   themeBtnText: {
-    fontSize: 18,
+    fontSize: 20,
   },
   cardHeader: {
     fontSize: 16,
@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
   },
   saveBtn: {
     backgroundColor: '#10b981',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
@@ -754,9 +754,11 @@ const styles = StyleSheet.create({
   balGrid: {
     flexDirection: 'row',
     gap: 10,
+    flexWrap: 'wrap',
   },
   balBox: {
     flex: 1,
+    minWidth: 130,
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
@@ -767,7 +769,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   balValue: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
     marginTop: 4,
   },
@@ -790,12 +792,12 @@ const styles = StyleSheet.create({
     borderColor: '#ef4444',
   },
   remainingLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
     color: '#94a3b8',
   },
   remainingValue: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '900',
     marginTop: 2,
   },
@@ -852,12 +854,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     outlineStyle: 'none',
   },
-  formRow: {
+  responsiveFormGrid: {
     flexDirection: 'row',
     gap: 10,
+    flexWrap: 'wrap',
   },
   flex1: {
     flex: 1,
+    minWidth: 130,
   },
   addBtn: {
     backgroundColor: '#3b82f6',
@@ -876,6 +880,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   emptyText: {
     textAlign: 'center',
@@ -889,11 +895,18 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
+    gap: 8,
+    flexWrap: 'wrap',
   },
   itemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
+    minWidth: 140,
+  },
+  itemTextWrapper: {
+    flex: 1,
   },
   itemEmoji: {
     fontSize: 22,
@@ -922,10 +935,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 8,
+    gap: 8,
   },
   secBtn: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
   },
@@ -937,7 +951,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ef4444',
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 8,
   },
   dangerBtnText: {
