@@ -182,15 +182,6 @@ export default function App() {
   // Active Salary for selected single date
   const currentDateSalary = dailySalaries[selectedDate] ?? calculatedCutoffSalary;
 
-  // Change Range Presets
-  const setPresetRange = (startStr, endStr) => {
-    setCutoffStart(startStr);
-    setCutoffEnd(endStr);
-    setSelectedDate(startStr);
-    setExpenseDate(startStr);
-    saveData(dailySalaries, expenses, isDark, attendanceMap, { cutoffStart: startStr, cutoffEnd: endStr });
-  };
-
   // Toggle Attendance status when tapping a date row
   const toggleAttendanceStatus = (dateStr) => {
     const current = getResolvedStatus(dateStr);
@@ -210,20 +201,6 @@ export default function App() {
 
     setDailySalaries(newDailySalaries);
     saveData(newDailySalaries, expenses, isDark, newAttMap);
-  };
-
-  // Save manual income override
-  const handleUpdateSalary = (valStr) => {
-    const val = parseFloat(valStr);
-    const validVal = (!isNaN(val) && val >= 0) ? val : 0;
-    
-    const updatedSalaries = {
-      ...dailySalaries,
-      [selectedDate]: validVal
-    };
-
-    setDailySalaries(updatedSalaries);
-    saveData(updatedSalaries, expenses, isDark);
   };
 
   // Add Expense
@@ -420,22 +397,6 @@ export default function App() {
               />
             </View>
           </View>
-
-          {/* Quick Cut-off Range Presets */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetsScrollView}>
-            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => setPresetRange('2026-07-11', '2026-07-25')}>
-              <Text style={theme.text}>📅 July 11 – 25</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => setPresetRange('2026-07-26', '2026-08-10')}>
-              <Text style={theme.text}>📅 July 26 – Aug 10</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => setPresetRange('2026-08-11', '2026-08-25')}>
-              <Text style={theme.text}>📅 Aug 11 – 25</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => setPresetRange('2026-08-26', '2026-09-10')}>
-              <Text style={theme.text}>📅 Aug 26 – Sep 10</Text>
-            </TouchableOpacity>
-          </ScrollView>
 
           {/* Computed Salary Banner */}
           <View style={styles.calcSummaryBox}>
@@ -792,17 +753,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.8,
-  },
-  presetsScrollView: {
-    flexDirection: 'row',
-    marginVertical: 2,
-  },
-  presetChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-    borderWidth: 1,
   },
   calcTriggerBtn: {
     backgroundColor: '#3b82f6',
