@@ -32,30 +32,6 @@ const getDayNameStr = (dateStr) => {
 const isSunday = (dateStr) => getDayNameStr(dateStr) === 'Sun';
 const isSaturday = (dateStr) => getDayNameStr(dateStr) === 'Sat';
 
-// Get total paid workdays in a given month (all days except Sundays)
-const getWorkdaysInMonth = (year, month) => {
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  let workdays = 0;
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dayOfWeek = new Date(year, month, d).getDay();
-    if (dayOfWeek !== 0) { // Not Sunday
-      workdays++;
-    }
-  }
-  return workdays;
-};
-
-// Get daily rate based on monthly net salary of 21,000 divided by total paid workdays in that month
-const getDailyRateForDate = (dateStr, monthlySalary = 21000) => {
-  try {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const workdays = getWorkdaysInMonth(y, m - 1);
-    return workdays > 0 ? monthlySalary / workdays : 0;
-  } catch (e) {
-    return monthlySalary / 26;
-  }
-};
-
 // Generate array of date strings between start and end date (inclusive)
 const getDateRangeArray = (startStr, endStr) => {
   const dates = [];
@@ -88,14 +64,14 @@ export default function App() {
   const [defaultDailyIncome, setDefaultDailyIncome] = useState('700');
   
   // Date Range Selection State for Cut-off Salary Calculator
-  const [cutoffStart, setCutoffStart] = useState('2026-07-11');
-  const [cutoffEnd, setCutoffEnd] = useState('2026-07-25');
+  const [cutoffStart, setCutoffStart] = useState('2026-07-26');
+  const [cutoffEnd, setCutoffEnd] = useState('2026-08-10');
   
   // Selected Single Date within or outside range
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [expenseDate, setExpenseDate] = useState(getTodayString());
   
-  // Custom divisor base pay setup
+  // Cut-off Base Pay setup (Default ₱10,500 for semi-monthly cut-off of ₱21,000 monthly)
   const [cutoffBasePay, setCutoffBasePay] = useState('10500');
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   
@@ -190,36 +166,32 @@ export default function App() {
     return 'FULL';
   };
 
-  // --- INDEPENDENT CUT-OFF SALARY CALCULATOR FEATURE ---
+  // --- SEMI-MONTHLY CUT-OFF SALARY CALCULATOR (MATCHING KAMI WORKFORCE) ---
   const rangeDates = getDateRangeArray(cutoffStart, cutoffEnd);
   
-  let calculatedCutoffSalary = 0;
   let totalScheduledDays = 0;
   let totalAttendedDays = 0;
 
   rangeDates.forEach(d => {
     const status = getResolvedStatus(d);
-    const dailyRate = getDailyRateForDate(d, 21000);
 
     if (!isSunday(d)) {
       totalScheduledDays += 1.0;
     }
 
-    let multiplier = 0;
     if (status === 'FULL' || status === 'SAT_FULL') {
-      multiplier = 1.0;
       totalAttendedDays += 1.0;
     } else if (status === 'HALF') {
-      multiplier = 0.5;
       totalAttendedDays += 0.5;
     } else if (status === 'ABSENT' || status === 'REST_DAY') {
-      multiplier = 0.0;
+      // 0
     }
-
-    calculatedCutoffSalary += dailyRate * multiplier;
   });
 
-  calculatedCutoffSalary = Math.round(calculatedCutoffSalary * 100) / 100;
+  const basePay = parseFloat(cutoffBasePay) || 10500;
+  const calculatedCutoffSalary = totalScheduledDays > 0
+    ? Math.round((totalAttendedDays / totalScheduledDays) * basePay * 100) / 100
+    : 0;
 
   // --- INDEPENDENT DAILY BUDGET CALCULATOR FEATURE ---
   // Active daily income: completely customizable by the user per date, defaulting to defaultDailyIncome
@@ -413,10 +385,10 @@ export default function App() {
 
               {/* Computed Salary Banner */}
               <View style={styles.calcSummaryBox}>
-                <Text style={styles.calcSummaryLabel}>AUTO-CALCULATED PAY FOR RANGE</Text>
+                <Text style={styles.calcSummaryLabel}>AUTO-CALCULATED CUT-OFF PAY</Text>
                 <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
                 <Text style={styles.calcSummarySub}>
-                  Based on ₱21,000/mo • {totalAttendedDays} of {totalScheduledDays} Work Days
+                  Semi-Monthly Base: {formatPeso(basePay)} • Attended {totalAttendedDays} of {totalScheduledDays} Work Days
                 </Text>
               </View>
             </View>
@@ -643,9 +615,25 @@ export default function App() {
             <ScrollView contentContainerStyle={{ gap: 14 }} showsVerticalScrollIndicator={false}>
               <View style={[styles.scheduleBanner, theme.btnBg]}>
                 <Text style={[styles.scheduleBannerText, theme.text]}>
-                  💵 Monthly Net Base Salary: ₱21,000{"\n"}
+                  💵 Semi-Monthly Cut-off Settings:{"\n"}
+                  Monthly Net: ₱21,000 | Semi-Monthly Base: ₱10,500{"\n"}
                   Saturdays = Halfday (Full Pay 1.0x) | Sundays = Rest Day (0x)
                 </Text>
+              </View>
+
+              {/* Base Cut-off Pay Input */}
+              <View style={styles.formFieldGroup}>
+                <Text style={[styles.fieldTitle, theme.subtext]}>Semi-Monthly Cut-off Pay (₱)</Text>
+                <TextInput
+                  style={[styles.textInputFull, theme.btnBg, theme.text]}
+                  value={cutoffBasePay}
+                  onChangeText={(val) => {
+                    setCutoffBasePay(val);
+                    saveData(dailySalaries, expenses, isDark, attendanceMap, { cutoffBasePay: val });
+                  }}
+                  keyboardType="numeric"
+                  placeholder="10500"
+                />
               </View>
 
               <Text style={[styles.fieldTitle, theme.subtext, { marginTop: 4 }]}>
@@ -687,7 +675,7 @@ export default function App() {
               </ScrollView>
 
               <View style={styles.calcSummaryBox}>
-                <Text style={styles.calcSummaryLabel}>NET CALCULATED PAY FOR RANGE</Text>
+                <Text style={styles.calcSummaryLabel}>NET CALCULATED CUT-OFF PAY</Text>
                 <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
                 <Text style={styles.calcSummarySub}>
                   Attended: {totalAttendedDays} of {totalScheduledDays} Paid Work Days
