@@ -11,17 +11,6 @@ import {
   StatusBar
 } from 'react-native';
 
-const CATEGORIES = {
-  Food: { label: 'Food & Groceries', emoji: '🍚' },
-  Bills: { label: 'Bills & Utilities', emoji: '⚡' },
-  Transport: { label: 'Transportation', emoji: '🚌' },
-  Housing: { label: 'Rent & Housing', emoji: '🏠' },
-  Health: { label: 'Health & Medical', emoji: '🏥' },
-  Shopping: { label: 'Shopping', emoji: '🛍️' },
-  Entertainment: { label: 'Entertainment', emoji: '🎮' },
-  Others: { label: 'Others', emoji: '💡' }
-};
-
 const getTodayString = (d = new Date()) => {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -41,8 +30,6 @@ export default function App() {
   // Form State
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('Food');
-  const [filterCat, setFilterCat] = useState('ALL');
   
   // Theme
   const [isDark, setIsDark] = useState(true);
@@ -51,7 +38,6 @@ export default function App() {
   const [editItem, setEditItem] = useState(null);
   const [editName, setEditName] = useState('');
   const [editAmount, setEditAmount] = useState('');
-  const [editCategory, setEditCategory] = useState('Food');
   const [editDate, setEditDate] = useState(getTodayString());
 
   // Load Saved Data
@@ -99,7 +85,7 @@ export default function App() {
     }).format(num);
   };
 
-  // Date Nav
+  // Date Navigation
   const changeDateByDays = (days) => {
     const parts = selectedDate.split('-');
     const current = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
@@ -127,7 +113,6 @@ export default function App() {
       id: Date.now().toString(),
       name: name.trim(),
       amount: amt,
-      category: category,
       date: expenseDate || selectedDate
     };
 
@@ -137,12 +122,6 @@ export default function App() {
 
     setName('');
     setAmount('');
-  };
-
-  // Preset Click
-  const handlePreset = (presetName, presetCat) => {
-    setName(presetName);
-    if (presetCat) setCategory(presetCat);
   };
 
   // Delete
@@ -157,7 +136,6 @@ export default function App() {
     setEditItem(item);
     setEditName(item.name);
     setEditAmount(item.amount.toString());
-    setEditCategory(item.category || 'Food');
     setEditDate(item.date || selectedDate);
   };
 
@@ -172,7 +150,6 @@ export default function App() {
           ...exp,
           name: editName.trim(),
           amount: amt,
-          category: editCategory,
           date: editDate
         };
       }
@@ -196,9 +173,9 @@ export default function App() {
   // Export CSV
   const handleExportCSV = () => {
     if (expenses.length === 0) return;
-    let csv = "Date,Expense Description,Category,Amount (PHP)\n";
+    let csv = "Date,Expense Description,Amount (PHP)\n";
     expenses.forEach(exp => {
-      csv += `"${exp.date || ''}","${exp.name.replace(/"/g, '""')}","${exp.category}",${exp.amount}\n`;
+      csv += `"${exp.date || ''}","${exp.name.replace(/"/g, '""')}",${exp.amount}\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -226,13 +203,8 @@ export default function App() {
   const remaining = salary - totalAllExpenses;
   const spentPct = salary > 0 ? Math.min(Math.round((totalAllExpenses / salary) * 100), 999) : 0;
 
-  const filteredExpenses = filterCat === 'ALL'
-    ? dateExpenses
-    : dateExpenses.filter(exp => exp.category === filterCat);
-
   const theme = isDark ? darkTheme : lightTheme;
 
-  // Sleek Compact Date Input Style
   const compactDateInputStyle = {
     backgroundColor: isDark ? '#1e293b' : '#ffffff',
     color: isDark ? '#f8fafc' : '#0f172a',
@@ -263,21 +235,6 @@ export default function App() {
     fontFamily: 'inherit',
     outline: 'none',
     minHeight: '38px',
-    cursor: 'pointer'
-  };
-
-  const selectStyle = {
-    width: '100%',
-    boxSizing: 'border-box',
-    backgroundColor: isDark ? '#1e293b' : '#ffffff',
-    color: isDark ? '#f8fafc' : '#0f172a',
-    border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-    borderRadius: '10px',
-    padding: '10px 12px',
-    fontSize: '14px',
-    fontFamily: 'inherit',
-    outline: 'none',
-    minHeight: '44px',
     cursor: 'pointer'
   };
 
@@ -389,12 +346,11 @@ export default function App() {
           </View>
         </View>
 
-        {/* Add Expense Form */}
+        {/* Add Expense Form (Minimal: Name + Amount + Date) */}
         <View style={[styles.simpleCard, theme.card]}>
           <View style={styles.cardHeaderFlexRow}>
             <Text style={[styles.sectionLabel, theme.subtext]}>ADD NEW EXPENSE</Text>
             
-            {/* Sleek Compact Inline Date Selector */}
             <View style={styles.inlineDateWrapper}>
               <Text style={[styles.inlineDateLabel, theme.subtext]}>Date:</Text>
               <input
@@ -406,31 +362,8 @@ export default function App() {
             </View>
           </View>
 
-          {/* Presets */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetsScrollView}>
-            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => handlePreset('Rice & Groceries', 'Food')}>
-              <Text style={theme.text}>🍚 Rice</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => handlePreset('Electric Bill', 'Bills')}>
-              <Text style={theme.text}>⚡ Electricity</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => handlePreset('Water Bill', 'Bills')}>
-              <Text style={theme.text}>💧 Water</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => handlePreset('Internet', 'Bills')}>
-              <Text style={theme.text}>🌐 Internet</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => handlePreset('Transpo', 'Transport')}>
-              <Text style={theme.text}>🚌 Transpo</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.presetChip, theme.btnBg]} onPress={() => handlePreset('Rent', 'Housing')}>
-              <Text style={theme.text}>🏠 Rent</Text>
-            </TouchableOpacity>
-          </ScrollView>
-
-          {/* Inputs */}
           <View style={styles.formFieldGroup}>
-            <Text style={[styles.fieldTitle, theme.subtext]}>Expense Description</Text>
+            <Text style={[styles.fieldTitle, theme.subtext]}>Expense Name</Text>
             <TextInput
               style={[styles.textInputFull, theme.btnBg, theme.text]}
               placeholder="e.g. Rice, Electric Bill..."
@@ -440,33 +373,16 @@ export default function App() {
             />
           </View>
 
-          <View style={styles.twoColumnGrid}>
-            <View style={styles.gridColumn}>
-              <Text style={[styles.fieldTitle, theme.subtext]}>Amount (₱)</Text>
-              <TextInput
-                style={[styles.textInputFull, theme.btnBg, theme.text]}
-                placeholder="0.00"
-                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-                keyboardType="numeric"
-                value={amount}
-                onChangeText={setAmount}
-              />
-            </View>
-
-            <View style={styles.gridColumn}>
-              <Text style={[styles.fieldTitle, theme.subtext]}>Category</Text>
-              <select
-                style={selectStyle}
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                {Object.keys(CATEGORIES).map(key => (
-                  <option key={key} value={key}>
-                    {CATEGORIES[key].emoji} {CATEGORIES[key].label}
-                  </option>
-                ))}
-              </select>
-            </View>
+          <View style={styles.formFieldGroup}>
+            <Text style={[styles.fieldTitle, theme.subtext]}>Amount (₱)</Text>
+            <TextInput
+              style={[styles.textInputFull, theme.btnBg, theme.text]}
+              placeholder="0.00"
+              placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+              keyboardType="numeric"
+              value={amount}
+              onChangeText={setAmount}
+            />
           </View>
 
           <TouchableOpacity style={styles.addExpenseBtn} onPress={handleAddExpense}>
@@ -476,60 +392,34 @@ export default function App() {
 
         {/* Expenses List Card */}
         <View style={[styles.simpleCard, theme.card]}>
-          <View style={styles.listHeaderFlex}>
-            <Text style={[styles.sectionLabel, theme.subtext]}>RECORDS FOR {selectedDate}</Text>
-            <select
-              style={{
-                backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                color: isDark ? '#f8fafc' : '#0f172a',
-                border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                borderRadius: 8,
-                padding: '6px 10px',
-                fontSize: 12,
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-              value={filterCat}
-              onChange={(e) => setFilterCat(e.target.value)}
-            >
-              <option value="ALL">All Categories</option>
-              {Object.keys(CATEGORIES).map(key => (
-                <option key={key} value={key}>
-                  {CATEGORIES[key].emoji} {CATEGORIES[key].label}
-                </option>
-              ))}
-            </select>
-          </View>
+          <Text style={[styles.sectionLabel, theme.subtext]}>RECORDS FOR {selectedDate}</Text>
 
-          {filteredExpenses.length === 0 ? (
+          {dateExpenses.length === 0 ? (
             <View style={styles.emptyBox}>
               <Text style={[styles.emptyBoxText, theme.subtext]}>No expenses for {selectedDate}</Text>
             </View>
           ) : (
-            filteredExpenses.map(item => {
-              const catInfo = CATEGORIES[item.category] || CATEGORIES.Others;
-              return (
-                <View key={item.id} style={[styles.expenseRow, theme.btnBg]}>
-                  <View style={styles.expenseRowLeft}>
-                    <Text style={styles.catEmoji}>{catInfo.emoji}</Text>
-                    <View style={styles.expenseTextInfo}>
-                      <Text style={[styles.expNameText, theme.text]}>{item.name}</Text>
-                      <Text style={[styles.expDateText, theme.subtext]}>{catInfo.label} &bull; {item.date}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.expenseRowRight}>
-                    <Text style={styles.expAmountText}>-{formatPeso(item.amount)}</Text>
-                    <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconAction}>
-                      <Text style={{ fontSize: 16 }}>✏️</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconAction}>
-                      <Text style={{ fontSize: 16 }}>🗑️</Text>
-                    </TouchableOpacity>
+            dateExpenses.map(item => (
+              <View key={item.id} style={[styles.expenseRow, theme.btnBg]}>
+                <View style={styles.expenseRowLeft}>
+                  <Text style={styles.catEmoji}>💸</Text>
+                  <View style={styles.expenseTextInfo}>
+                    <Text style={[styles.expNameText, theme.text]}>{item.name}</Text>
+                    <Text style={[styles.expDateText, theme.subtext]}>📅 {item.date}</Text>
                   </View>
                 </View>
-              );
-            })
+
+                <View style={styles.expenseRowRight}>
+                  <Text style={styles.expAmountText}>-{formatPeso(item.amount)}</Text>
+                  <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconAction}>
+                    <Text style={{ fontSize: 16 }}>✏️</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconAction}>
+                    <Text style={{ fontSize: 16 }}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
           )}
 
           <View style={styles.footerBtnRow}>
@@ -542,7 +432,7 @@ export default function App() {
           </View>
         </View>
 
-        <Text style={[styles.pageFooterText, theme.subtext]}>Salary Budget Tracker &bull; Sleek & Compact</Text>
+        <Text style={[styles.pageFooterText, theme.subtext]}>Salary Budget Tracker &bull; Minimalist & Clean</Text>
 
       </ScrollView>
 
@@ -565,7 +455,7 @@ export default function App() {
               onChange={(e) => setEditDate(e.target.value)}
             />
 
-            <Text style={[styles.fieldTitle, theme.subtext]}>Description</Text>
+            <Text style={[styles.fieldTitle, theme.subtext]}>Expense Name</Text>
             <TextInput
               style={[styles.textInputFull, theme.btnBg, theme.text]}
               value={editName}
@@ -579,19 +469,6 @@ export default function App() {
               onChangeText={setEditAmount}
               keyboardType="numeric"
             />
-
-            <Text style={[styles.fieldTitle, theme.subtext]}>Category</Text>
-            <select
-              style={selectStyle}
-              value={editCategory}
-              onChange={(e) => setEditCategory(e.target.value)}
-            >
-              {Object.keys(CATEGORIES).map(key => (
-                <option key={key} value={key}>
-                  {CATEGORIES[key].emoji} {CATEGORIES[key].label}
-                </option>
-              ))}
-            </select>
 
             <View style={styles.modalActionRow}>
               <TouchableOpacity style={[styles.exportBtn, theme.btnBg]} onPress={() => setEditItem(null)}>
@@ -820,17 +697,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  presetsScrollView: {
-    flexDirection: 'row',
-    marginVertical: 4,
-  },
-  presetChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-    borderWidth: 1,
-  },
   textInputFull: {
     height: 44,
     borderRadius: 10,
@@ -839,16 +705,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     outlineStyle: 'none',
     width: '100%',
-  },
-  twoColumnGrid: {
-    flexDirection: 'row',
-    gap: 10,
-    flexWrap: 'wrap',
-  },
-  gridColumn: {
-    flex: 1,
-    minWidth: 130,
-    gap: 4,
   },
   addExpenseBtn: {
     backgroundColor: '#3b82f6',
@@ -865,13 +721,6 @@ const styles = StyleSheet.create({
   },
 
   /* Expense List */
-  listHeaderFlex: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
   emptyBox: {
     paddingVertical: 24,
     alignItems: 'center',
@@ -897,7 +746,7 @@ const styles = StyleSheet.create({
     minWidth: 140,
   },
   catEmoji: {
-    fontSize: 24,
+    fontSize: 22,
   },
   expenseTextInfo: {
     flex: 1,
