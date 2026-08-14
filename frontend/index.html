@@ -3,10 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Salary Budget Tracker — React Native</title>
+  <title>Salary Budget Tracker</title>
+  
+  <!-- PWA Manifest & App Icons -->
+  <link rel="manifest" href="/manifest.json" />
   <link rel="icon" type="image/jpeg" href="/app_logo.jpg" />
+  <link rel="apple-touch-icon" href="/app_logo.jpg" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="description" content="Smart personal daily salary and expense manager. Works 100% offline." />
+
   <style>
-    /* Reset & full viewport for React Native Web */
     html, body, #root {
       width: 100%;
       height: 100%;
@@ -21,5 +27,12 @@
 <body>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(console.error);
+      });
+    }
+  </script>
 </body>
 </html>
