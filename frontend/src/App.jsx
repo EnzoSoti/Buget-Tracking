@@ -232,21 +232,37 @@ export default function App() {
 
   const theme = isDark ? darkTheme : lightTheme;
 
-  // Simple Clean Input Styles
-  const dateInputStyle = {
-    flex: '1 1 130px',
-    width: '100%',
+  // Sleek Compact Date Input Style
+  const compactDateInputStyle = {
+    backgroundColor: isDark ? '#1e293b' : '#ffffff',
+    color: isDark ? '#f8fafc' : '#0f172a',
+    border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
+    borderRadius: '8px',
+    padding: '6px 10px',
+    fontSize: '13px',
+    fontWeight: 'bold',
+    fontFamily: 'inherit',
+    outline: 'none',
+    minHeight: '38px',
+    maxWidth: '180px',
+    boxSizing: 'border-box',
+    cursor: 'pointer'
+  };
+
+  const navDateInputStyle = {
+    flex: '1 1 120px',
+    maxWidth: '180px',
     boxSizing: 'border-box',
     backgroundColor: isDark ? '#1e293b' : '#ffffff',
     color: isDark ? '#f8fafc' : '#0f172a',
     border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-    borderRadius: '10px',
-    padding: '10px 12px',
-    fontSize: '14px',
+    borderRadius: '8px',
+    padding: '6px 10px',
+    fontSize: '13px',
     fontWeight: 'bold',
     fontFamily: 'inherit',
     outline: 'none',
-    minHeight: '44px',
+    minHeight: '38px',
     cursor: 'pointer'
   };
 
@@ -281,7 +297,7 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-        {/* Simple Date Filter Row */}
+        {/* Date Filter Row */}
         <View style={[styles.simpleCard, theme.card]}>
           <Text style={[styles.sectionLabel, theme.subtext]}>SELECT DATE</Text>
           <View style={styles.dateControlRow}>
@@ -291,7 +307,7 @@ export default function App() {
 
             <input
               type="date"
-              style={dateInputStyle}
+              style={navDateInputStyle}
               value={selectedDate}
               onChange={(e) => {
                 if (e.target.value) {
@@ -375,17 +391,19 @@ export default function App() {
 
         {/* Add Expense Form */}
         <View style={[styles.simpleCard, theme.card]}>
-          <Text style={[styles.sectionLabel, theme.subtext]}>ADD NEW EXPENSE</Text>
-
-          {/* Date Selector for Expense */}
-          <View style={styles.formFieldGroup}>
-            <Text style={[styles.fieldTitle, theme.subtext]}>Date</Text>
-            <input
-              type="date"
-              style={dateInputStyle}
-              value={expenseDate}
-              onChange={(e) => setExpenseDate(e.target.value)}
-            />
+          <View style={styles.cardHeaderFlexRow}>
+            <Text style={[styles.sectionLabel, theme.subtext]}>ADD NEW EXPENSE</Text>
+            
+            {/* Sleek Compact Inline Date Selector */}
+            <View style={styles.inlineDateWrapper}>
+              <Text style={[styles.inlineDateLabel, theme.subtext]}>Date:</Text>
+              <input
+                type="date"
+                style={compactDateInputStyle}
+                value={expenseDate}
+                onChange={(e) => setExpenseDate(e.target.value)}
+              />
+            </View>
           </View>
 
           {/* Presets */}
@@ -452,7 +470,7 @@ export default function App() {
           </View>
 
           <TouchableOpacity style={styles.addExpenseBtn} onPress={handleAddExpense}>
-            <Text style={styles.addExpenseBtnText}>+ Add Expense</Text>
+            <Text style={styles.addExpenseBtnText}>+ Add Expense ({expenseDate})</Text>
           </TouchableOpacity>
         </View>
 
@@ -524,7 +542,7 @@ export default function App() {
           </View>
         </View>
 
-        <Text style={[styles.pageFooterText, theme.subtext]}>Salary Budget Tracker &bull; 100% Mobile Responsive</Text>
+        <Text style={[styles.pageFooterText, theme.subtext]}>Salary Budget Tracker &bull; Sleek & Compact</Text>
 
       </ScrollView>
 
@@ -542,7 +560,7 @@ export default function App() {
             <Text style={[styles.fieldTitle, theme.subtext]}>Date</Text>
             <input
               type="date"
-              style={dateInputStyle}
+              style={compactDateInputStyle}
               value={editDate}
               onChange={(e) => setEditDate(e.target.value)}
             />
@@ -590,7 +608,7 @@ export default function App() {
   );
 }
 
-// Clean Minimalist Responsive Styles
+// Clean Stylesheet
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -638,6 +656,22 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.8,
   },
+  cardHeaderFlexRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  inlineDateWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  inlineDateLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
   dateControlRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -646,10 +680,10 @@ const styles = StyleSheet.create({
   },
   dateNavBtn: {
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
     borderWidth: 1,
-    minHeight: 44,
+    minHeight: 38,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -958,7 +992,7 @@ const styles = StyleSheet.create({
   }
 });
 
-// Theme Definitions
+// Themes
 const darkTheme = {
   container: { backgroundColor: '#0f172a' },
   card: { backgroundColor: '#1e293b', borderColor: '#334155' },
