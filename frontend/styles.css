@@ -1,4 +1,6 @@
-/* Simple, Clean, High-Contrast Salary Budget Tracker CSS */
+/* ==========================================================================
+   Salary Budget Tracker — Super Responsive CSS Design System
+   ========================================================================== */
 
 :root {
   --bg: #0f172a;
@@ -8,11 +10,12 @@
   --text-muted: #94a3b8;
   
   --green: #10b981;
+  --green-glow: rgba(16, 185, 129, 0.15);
   --blue: #3b82f6;
   --amber: #f59e0b;
   --red: #ef4444;
   
-  --radius: 12px;
+  --radius: 14px;
   --font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -24,13 +27,21 @@
   --text-muted: #64748b;
   
   --green: #059669;
+  --green-glow: rgba(5, 150, 105, 0.1);
   --blue: #2563eb;
 }
 
-* {
+/* Reset & Box Model */
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -38,48 +49,60 @@ body {
   background-color: var(--bg);
   color: var(--text);
   min-height: 100vh;
-  padding: 12px;
+  min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  padding: clamp(8px, 2vw, 20px);
   display: flex;
   justify-content: center;
+  align-items: flex-start;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+/* Main Container - Fluid & Centered */
 .app-container {
   width: 100%;
-  max-width: 520px;
+  max-width: 560px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: clamp(10px, 2.5vw, 16px);
+  margin: 0 auto;
 }
 
-/* Header */
+/* Super Responsive Header */
 .app-header {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px 18px;
+  padding: clamp(12px, 3vw, 18px);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: clamp(8px, 2vw, 12px);
+  flex: 1;
+  min-width: 180px;
 }
 
 .app-icon-emoji {
-  font-size: 2rem;
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  line-height: 1;
 }
 
 .brand h1 {
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: clamp(1rem, 4vw, 1.25rem);
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 .brand .subtitle {
-  font-size: 0.78rem;
+  font-size: clamp(0.7rem, 2.8vw, 0.82rem);
   color: var(--text-muted);
+  font-weight: 500;
 }
 
 .header-actions {
@@ -89,53 +112,72 @@ body {
 }
 
 .icon-btn {
-  background: transparent;
+  background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
-/* Cards */
+.icon-btn:active {
+  transform: scale(0.94);
+}
+
+/* Fluid Cards */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px;
+  padding: clamp(14px, 3.5vw, 20px);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: clamp(10px, 2.5vw, 16px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .card-title {
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: clamp(0.95rem, 3.5vw, 1.1rem);
+  font-weight: 800;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .card-header-flex {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-/* Salary Input Row */
+/* Salary Input Row - Responsive Stack on Mobile */
 .salary-input-row {
   display: flex;
   align-items: center;
   gap: 8px;
   background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 6px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 12px;
+  transition: border-color 0.2s ease;
+}
+
+.salary-input-row:focus-within {
+  border-color: var(--green);
 }
 
 .peso-sign {
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: clamp(1.2rem, 4vw, 1.4rem);
+  font-weight: 800;
   color: var(--green);
 }
 
@@ -144,50 +186,57 @@ body {
   background: transparent;
   border: none;
   outline: none;
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: clamp(1.1rem, 4vw, 1.35rem);
+  font-weight: 800;
   color: var(--text);
   font-family: var(--font);
+  width: 100%;
+  min-width: 0;
 }
 
-/* Balance Grid */
+/* Balance Overview Grid */
 .balance-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: clamp(8px, 2vw, 12px);
 }
 
 .bal-box {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 10px;
+  padding: clamp(10px, 2.5vw, 14px);
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
 .bal-label {
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: clamp(0.68rem, 2.4vw, 0.78rem);
+  font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .bal-value {
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: clamp(1.05rem, 3.8vw, 1.25rem);
+  font-weight: 800;
+  word-break: break-all;
 }
 
 .text-danger { color: var(--red); }
 .text-success { color: var(--green); }
+.text-warning { color: var(--amber); }
 
+/* Main Remaining Box */
 .remaining-box {
-  background: rgba(16, 185, 129, 0.12);
+  background: var(--green-glow);
   border: 2px solid var(--green);
-  border-radius: 10px;
-  padding: 14px;
+  border-radius: 12px;
+  padding: clamp(14px, 3.5vw, 18px);
   text-align: center;
+  transition: all 0.25s ease;
 }
 
 .remaining-box.warning {
@@ -201,16 +250,18 @@ body {
 }
 
 .remaining-value {
-  font-size: 1.8rem;
-  font-weight: 800;
+  font-size: clamp(1.5rem, 6vw, 2.2rem);
+  font-weight: 900;
   color: var(--green);
   margin-top: 4px;
+  letter-spacing: -0.02em;
+  word-break: break-all;
 }
 
 .remaining-box.warning .remaining-value { color: var(--amber); }
 .remaining-box.danger .remaining-value { color: var(--red); }
 
-/* Progress */
+/* Progress Bar */
 .progress-section {
   display: flex;
   flex-direction: column;
@@ -220,38 +271,48 @@ body {
 .progress-info {
   display: flex;
   justify-content: space-between;
-  font-size: 0.8rem;
+  align-items: center;
+  font-size: clamp(0.75rem, 2.6vw, 0.85rem);
   color: var(--text-muted);
 }
 
 .progress-bg {
   width: 100%;
-  height: 8px;
+  height: 9px;
   background: var(--bg);
   border-radius: 99px;
   overflow: hidden;
+  border: 1px solid var(--border);
 }
 
 .progress-fill {
   height: 100%;
   background: var(--green);
-  transition: width 0.3s ease;
+  border-radius: 99px;
+  transition: width 0.35s ease, background 0.35s ease;
 }
 
 .progress-fill.warning { background: var(--amber); }
 .progress-fill.danger { background: var(--red); }
 
-/* Presets */
+/* Scrollable Presets Chips */
 .presets-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   overflow-x: auto;
   padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.presets-row::-webkit-scrollbar {
+  display: none;
 }
 
 .presets-title {
   font-size: 0.78rem;
+  font-weight: 700;
   color: var(--text-muted);
   white-space: nowrap;
 }
@@ -260,20 +321,22 @@ body {
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 5px 10px;
+  padding: 6px 12px;
   border-radius: 20px;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
-.chip:hover {
+.chip:active {
+  transform: scale(0.95);
   background: var(--blue);
   color: white;
-  border-color: var(--blue);
 }
 
-/* Form */
+/* Simple Responsive Form Layout */
 .simple-form {
   display: flex;
   flex-direction: column;
@@ -283,20 +346,24 @@ body {
 .form-row {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
-.flex-1 { flex: 1; }
+.flex-1 { 
+  flex: 1; 
+  min-width: 130px; 
+}
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .form-group label {
   font-size: 0.8rem;
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .form-group input, 
@@ -304,31 +371,51 @@ body {
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: 10px;
+  padding: 12px 14px;
   font-size: 0.95rem;
   font-family: var(--font);
   outline: none;
+  width: 100%;
+  min-height: 44px; /* Mobile touch friendly target */
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus, 
+.form-group select:focus {
+  border-color: var(--blue);
 }
 
 .select-filter {
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 0.8rem;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  outline: none;
 }
 
-/* Buttons */
+/* Touch Friendly Buttons */
 .btn {
-  padding: 10px 16px;
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 18px;
+  border-radius: 10px;
   border: none;
   font-weight: 700;
   font-size: 0.9rem;
-  cursor: pointer;
   font-family: var(--font);
+  cursor: pointer;
+  min-height: 44px;
+  transition: transform 0.12s ease, opacity 0.15s ease;
+}
+
+.btn:active {
+  transform: scale(0.97);
 }
 
 .btn-primary { background: var(--blue); color: white; }
@@ -336,45 +423,54 @@ body {
 .btn-secondary { background: var(--bg); border: 1px solid var(--border); color: var(--text); }
 .btn-danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
 .btn-block { width: 100%; }
-.btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+.btn-sm { padding: 8px 12px; font-size: 0.8rem; min-height: 36px; }
 
 /* Expense List */
 .expense-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: 350px;
+  gap: 10px;
+  max-height: 380px;
   overflow-y: auto;
+  padding-right: 2px;
 }
 
 .expense-item {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 14px;
+  border-radius: 10px;
+  padding: 12px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .exp-left {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1;
+  min-width: 150px;
 }
 
 .exp-emoji {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 .exp-title {
-  font-weight: 700;
-  font-size: 0.92rem;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--text);
+  word-break: break-word;
 }
 
 .exp-sub {
   font-size: 0.75rem;
   color: var(--text-muted);
+  font-weight: 500;
 }
 
 .exp-right {
@@ -384,8 +480,10 @@ body {
 }
 
 .exp-amount {
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 1rem;
   color: var(--red);
+  white-space: nowrap;
 }
 
 .exp-actions {
@@ -397,29 +495,37 @@ body {
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 0.9rem;
-  padding: 4px;
+  font-size: 1rem;
+  padding: 6px;
+  border-radius: 6px;
+}
+
+.exp-btn:active {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .empty-state {
   text-align: center;
-  padding: 20px;
+  padding: 24px 12px;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.88rem;
 }
 
 .card-footer-actions {
   display: flex;
   justify-content: space-between;
-  padding-top: 8px;
+  align-items: center;
+  padding-top: 10px;
   border-top: 1px solid var(--border);
+  gap: 10px;
 }
 
-/* Modal */
+/* Responsive Modal */
 .modal {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -433,7 +539,7 @@ body {
   border-radius: var(--radius);
   padding: 20px;
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -448,35 +554,42 @@ body {
 .close-x {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   color: var(--text-muted);
   cursor: pointer;
+  padding: 4px 8px;
 }
 
 .modal-buttons {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 6px;
+  gap: 10px;
+  margin-top: 8px;
 }
 
-/* Toast */
+/* Toast Notification */
 .toast-container {
   position: fixed;
-  bottom: 16px;
-  right: 16px;
+  bottom: 20px;
+  right: 20px;
+  left: 20px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
   z-index: 2000;
 }
 
 .toast {
   background: var(--card);
-  border: 1px solid var(--green);
+  border: 1.5px solid var(--green);
   color: var(--text);
-  padding: 10px 16px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  font-size: 0.85rem;
-  font-weight: 600;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  font-size: 0.88rem;
+  font-weight: 700;
+  max-width: 90%;
+  text-align: center;
 }
 
 .toast.error { border-color: var(--red); }
@@ -484,6 +597,47 @@ body {
 .app-footer {
   text-align: center;
   padding: 12px;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Media Queries for Ultra-Small Phones and Mobile Adjustments
+   ========================================================================== */
+
+@media (max-width: 420px) {
+  body {
+    padding: 6px;
+  }
+  
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+  
+  .form-row {
+    flex-direction: column;
+  }
+  
+  .salary-input-row {
+    flex-direction: row;
+  }
+  
+  .salary-input-row input {
+    font-size: 1.1rem;
+  }
+  
+  .bal-value {
+    font-size: 1rem;
+  }
+  
+  .remaining-value {
+    font-size: 1.5rem;
+  }
 }
