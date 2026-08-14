@@ -22,10 +22,22 @@ const CATEGORIES = {
   Others: { label: 'Others', emoji: '💡' }
 };
 
+// Helper: Get YYYY-MM-DD string
+const getTodayString = (d = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function App() {
   const [salary, setSalary] = useState(11153.80);
   const [salaryInputVal, setSalaryInputVal] = useState('11153.80');
   const [expenses, setExpenses] = useState([]);
+  
+  // Date Selection State (Default to Today YYYY-MM-DD)
+  const [selectedDate, setSelectedDate] = useState(getTodayString());
+  const [expenseDate, setExpenseDate] = useState(getTodayString());
   
   // New Expense Form State
   const [name, setName] = useState('');
@@ -41,6 +53,7 @@ export default function App() {
   const [editName, setEditName] = useState('');
   const [editAmount, setEditAmount] = useState('');
   const [editCategory, setEditCategory] = useState('Food');
+  const [editDate, setEditDate] = useState(getTodayString());
 
   // Load Saved Data
   useEffect(() => {
@@ -87,6 +100,16 @@ export default function App() {
     }).format(num);
   };
 
+  // Date Navigation (Prev Day / Next Day)
+  const changeDateByDays = (days) => {
+    const parts = selectedDate.split('-');
+    const current = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    current.setDate(current.getDate() + days);
+    const newStr = getTodayString(current);
+    setSelectedDate(newStr);
+    setExpenseDate(newStr);
+  };
+
   // Update Salary
   const handleUpdateSalary = () => {
     const val = parseFloat(salaryInputVal);
@@ -106,7 +129,7 @@ export default function App() {
       name: name.trim(),
       amount: amt,
       category: category,
-      date: new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })
+      date: expenseDate || selectedDate
     };
 
     const updated = [newItem, ...expenses];
@@ -136,6 +159,7 @@ export default function App() {
     setEditName(item.name);
     setEditAmount(item.amount.toString());
     setEditCategory(item.category || 'Food');
+    setEditDate(item.date || selectedDate);
   };
 
   // Save Edit
@@ -145,7 +169,13 @@ export default function App() {
 
     const updated = expenses.map(exp => {
       if (exp.id === editItem.id) {
-        return { ...exp, name: editName.trim(), amount: amt, category: editCategory };
+        return {
+          ...exp,
+          name: editName.trim(),
+          amount: amt,
+          category: editCategory,
+          date: editDate
+        };
       }
       return exp;
     });
@@ -176,7 +206,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Salary_Budget_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `Salary_Budget_Records.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -190,14 +220,19 @@ export default function App() {
     saveData(salary, expenses, next);
   };
 
-  // Calculated Values
-  const totalExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
-  const remaining = salary - totalExpenses;
-  const spentPct = salary > 0 ? Math.min(Math.round((totalExpenses / salary) * 100), 999) : 0;
+  // Filter Expenses by Selected Date
+  const dateExpenses = expenses.filter(exp => exp.date === selectedDate);
+  const totalDateExpenses = dateExpenses.reduce((sum, item) => sum + item.amount, 0);
 
+  // Overall Total Expenses across all dates
+  const totalAllExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
+  const remaining = salary - totalAllExpenses;
+  const spentPct = salary > 0 ? Math.min(Math.round((totalAllExpenses / salary) * 100), 999) : 0;
+
+  // Filter Category within selected Date
   const filteredExpenses = filterCat === 'ALL'
-    ? expenses
-    : expenses.filter(exp => exp.category === filterCat);
+    ? dateExpenses
+    : dateExpenses.filter(exp => exp.category === filterCat);
 
   // Theme Styles
   const theme = isDark ? darkTheme : lightTheme;
@@ -213,7 +248,7 @@ export default function App() {
             <Text style={styles.logoEmoji}>💰</Text>
             <View>
               <Text style={[styles.title, theme.text]}>Salary Budget Tracker</Text>
-              <Text style={[styles.subtitle, theme.subtext]}>React Native &bull; Vercel Ready</Text>
+              <Text style={[styles.subtitle, theme.subtext]}>Date-Based Records &bull; Vercel Ready</Text>
             </View>
           </View>
           <TouchableOpacity style={[styles.themeBtn, theme.themeBtn]} onPress={toggleTheme}>
@@ -221,7 +256,60 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-        {/* Salary Input Card */}
+        {/* Date Selector Navigation Bar */}
+        <View style={[styles.card, theme.card, styles.dateNavCard]}>
+          <Text style={[styles.cardHeader, theme.text]}>📅 Select Date to View Records</Text>
+          
+          <View style={styles.datePickerRow}>
+            <TouchableOpacity style={[styles.navBtn, theme.inputBg]} onPress={() => changeDateByDays(-1)}>
+              <Text style={[styles.navBtnText, theme.text]}>◀ Prev Day</Text>
+            </TouchableOpacity>
+
+            <input
+              type="date"
+              style={{
+                backgroundColor: isDark ? '#0f172a' : '#f8fafc',
+                color: isDark ? '#f8fafc' : '#0f172a',
+                border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
+                borderRadius: 8,
+                padding: '8px 12px',
+                fontSize: 14,
+                fontWeight: 'bold',
+                fontFamily: 'inherit',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+              value={selectedDate}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setSelectedDate(e.target.value);
+                  setExpenseDate(e.target.value);
+                }
+              }}
+            />
+
+            <TouchableOpacity style={[styles.navBtn, theme.inputBg]} onPress={() => changeDateByDays(1)}>
+              <Text style={[styles.navBtnText, theme.text]}>Next Day ▶</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.todayQuickRow}>
+            <TouchableOpacity
+              style={[styles.todayChip, selectedDate === getTodayString() ? styles.todayChipActive : theme.inputBg]}
+              onPress={() => {
+                const today = getTodayString();
+                setSelectedDate(today);
+                setExpenseDate(today);
+              }}
+            >
+              <Text style={selectedDate === getTodayString() ? styles.todayChipTextActive : theme.text}>
+                🗓️ Today ({getTodayString()})
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Salary Income Card */}
         <View style={[styles.card, theme.card]}>
           <Text style={[styles.cardHeader, theme.text]}>💵 Salary Income</Text>
           <View style={[styles.inputRow, theme.inputBg]}>
@@ -240,7 +328,7 @@ export default function App() {
           </View>
         </View>
 
-        {/* Balance Card */}
+        {/* Balance & Overview Card */}
         <View style={[styles.card, theme.card]}>
           <View style={styles.balGrid}>
             <View style={[styles.balBox, theme.inputBg]}>
@@ -248,8 +336,8 @@ export default function App() {
               <Text style={[styles.balValue, theme.text]}>{formatPeso(salary)}</Text>
             </View>
             <View style={[styles.balBox, theme.inputBg]}>
-              <Text style={[styles.balLabel, theme.subtext]}>Total Expenses</Text>
-              <Text style={[styles.balValue, styles.redText]}>{formatPeso(totalExpenses)}</Text>
+              <Text style={[styles.balLabel, theme.subtext]}>Expenses on ({selectedDate})</Text>
+              <Text style={[styles.balValue, styles.redText]}>{formatPeso(totalDateExpenses)}</Text>
             </View>
           </View>
 
@@ -259,7 +347,7 @@ export default function App() {
             remaining < 0 || spentPct > 90 ? styles.dangerBox :
             spentPct >= 75 ? styles.warningBox : styles.greenBox
           ]}>
-            <Text style={styles.remainingLabel}>REMAINING BALANCE</Text>
+            <Text style={styles.remainingLabel}>REMAINING BALANCE (OVERALL)</Text>
             <Text style={[
               styles.remainingValue,
               remaining < 0 || spentPct > 90 ? styles.redText :
@@ -290,9 +378,29 @@ export default function App() {
           </View>
         </View>
 
-        {/* Add Expense Card */}
+        {/* Add Expense Card for Selected Date */}
         <View style={[styles.card, theme.card]}>
-          <Text style={[styles.cardHeader, theme.text]}>➕ Add New Expense</Text>
+          <Text style={[styles.cardHeader, theme.text]}>➕ Add Expense for {expenseDate}</Text>
+
+          {/* Date for New Expense */}
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, theme.subtext]}>Expense Date</Text>
+            <input
+              type="date"
+              style={{
+                backgroundColor: isDark ? '#0f172a' : '#f8fafc',
+                color: isDark ? '#f8fafc' : '#0f172a',
+                border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
+                borderRadius: 8,
+                padding: '8px 12px',
+                fontSize: 14,
+                outline: 'none',
+                width: '100%'
+              }}
+              value={expenseDate}
+              onChange={(e) => setExpenseDate(e.target.value)}
+            />
+          </View>
 
           {/* Quick Presets */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetsRow}>
@@ -365,14 +473,14 @@ export default function App() {
           </View>
 
           <TouchableOpacity style={styles.addBtn} onPress={handleAddExpense}>
-            <Text style={styles.addBtnText}>➕ Add Expense</Text>
+            <Text style={styles.addBtnText}>➕ Add Expense for {expenseDate}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Expense List Card */}
+        {/* Expense Records List for Selected Date */}
         <View style={[styles.card, theme.card]}>
           <View style={styles.listHeaderRow}>
-            <Text style={[styles.cardHeader, theme.text]}>📝 Expense List</Text>
+            <Text style={[styles.cardHeader, theme.text]}>📝 Records for {selectedDate}</Text>
             <select
               style={{
                 backgroundColor: isDark ? '#0f172a' : '#f8fafc',
@@ -396,7 +504,7 @@ export default function App() {
           </View>
 
           {filteredExpenses.length === 0 ? (
-            <Text style={[styles.emptyText, theme.subtext]}>No expenses added yet.</Text>
+            <Text style={[styles.emptyText, theme.subtext]}>No expenses recorded on {selectedDate}.</Text>
           ) : (
             filteredExpenses.map(item => {
               const catInfo = CATEGORIES[item.category] || CATEGORIES.Others;
@@ -406,7 +514,7 @@ export default function App() {
                     <Text style={styles.itemEmoji}>{catInfo.emoji}</Text>
                     <View>
                       <Text style={[styles.itemTitle, theme.text]}>{item.name}</Text>
-                      <Text style={[styles.itemSub, theme.subtext]}>{catInfo.label} &bull; {item.date}</Text>
+                      <Text style={[styles.itemSub, theme.subtext]}>{catInfo.label} &bull; 📅 {item.date}</Text>
                     </View>
                   </View>
 
@@ -427,7 +535,7 @@ export default function App() {
           {/* List Footer Buttons */}
           <View style={styles.footerRow}>
             <TouchableOpacity style={[styles.secBtn, theme.inputBg]} onPress={handleExportCSV}>
-              <Text style={[styles.secBtnText, theme.text]}>📄 Export CSV</Text>
+              <Text style={[styles.secBtnText, theme.text]}>📄 Export All CSV</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.dangerBtn} onPress={handleClearAll}>
               <Text style={styles.dangerBtnText}>🗑️ Clear All</Text>
@@ -435,7 +543,7 @@ export default function App() {
           </View>
         </View>
 
-        <Text style={[styles.footerText, theme.subtext]}>React Native Budget Tracker &bull; Vercel Deployed</Text>
+        <Text style={[styles.footerText, theme.subtext]}>React Native Budget Tracker &bull; Date Records Stored</Text>
 
       </ScrollView>
 
@@ -444,11 +552,27 @@ export default function App() {
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, theme.card]}>
             <View style={styles.modalHeaderRow}>
-              <Text style={[styles.modalTitle, theme.text]}>✏️ Edit Expense</Text>
+              <Text style={[styles.modalTitle, theme.text]}>✏️ Edit Expense Record</Text>
               <TouchableOpacity onPress={() => setEditItem(null)}>
                 <Text style={[styles.closeX, theme.subtext]}>✕</Text>
               </TouchableOpacity>
             </View>
+
+            <Text style={[styles.fieldLabel, theme.subtext]}>Date</Text>
+            <input
+              type="date"
+              style={{
+                backgroundColor: isDark ? '#0f172a' : '#f8fafc',
+                color: isDark ? '#f8fafc' : '#0f172a',
+                border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
+                borderRadius: 8,
+                padding: 8,
+                fontSize: 14,
+                outline: 'none'
+              }}
+              value={editDate}
+              onChange={(e) => setEditDate(e.target.value)}
+            />
 
             <Text style={[styles.fieldLabel, theme.subtext]}>Description</Text>
             <TextInput
@@ -501,7 +625,7 @@ export default function App() {
   );
 }
 
-// StyleSheet - All camelCase React Native properties
+// StyleSheet
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -518,6 +642,45 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     gap: 12,
+  },
+  dateNavCard: {
+    alignItems: 'stretch',
+  },
+  datePickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  navBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  navBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  todayQuickRow: {
+    marginTop: 4,
+    alignItems: 'center',
+  },
+  todayChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  todayChipActive: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  todayChipTextActive: {
+    color: '#ffffff',
+    fontWeight: '800',
+    fontSize: 12,
   },
   headerRow: {
     flexDirection: 'row',
@@ -553,6 +716,9 @@ const styles = StyleSheet.create({
   cardHeader: {
     fontSize: 16,
     fontWeight: '800',
+  },
+  fieldGroup: {
+    gap: 4,
   },
   inputRow: {
     flexDirection: 'row',
