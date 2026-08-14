@@ -1,0 +1,13 @@
+{
+  "name": "salary-budget-tracker",
+  "version": "1.0.0",
+  "description": "Mobile-installable single page salary budget tracking application",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx -y serve . -l 5000",
+    "dev": "npx -y serve . -l 5000"
+  },
+  "keywords": ["salary", "budget", "tracker", "pwa", "expenses"],
+  "author": "",
+  "license": "MIT"
+}
