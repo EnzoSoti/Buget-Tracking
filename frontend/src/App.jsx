@@ -305,73 +305,56 @@ export default function App() {
 
   const theme = isDark ? darkTheme : lightTheme;
 
-  // Sleek, compact date input style for From / To date fields
-  const rangeDateInputStyle = {
-    backgroundColor: isDark ? '#0f172a' : '#ffffff',
-    color: isDark ? '#f8fafc' : '#0f172a',
-    border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-    borderRadius: '8px',
-    padding: '6px 10px',
-    fontSize: '13px',
-    fontWeight: 'bold',
-    fontFamily: 'inherit',
-    outline: 'none',
-    height: '38px',
-    maxHeight: '38px',
-    boxSizing: 'border-box',
-    cursor: 'pointer',
-    width: '100%'
-  };
-
-  const compactDateInputStyle = {
+  // Modern input styles with smooth styling attributes
+  const dateInputStyle = {
     backgroundColor: isDark ? '#1e293b' : '#ffffff',
     color: isDark ? '#f8fafc' : '#0f172a',
     border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-    borderRadius: '8px',
-    padding: '6px 10px',
-    fontSize: '13px',
-    fontWeight: 'bold',
+    borderRadius: '12px',
+    padding: '10px 14px',
+    fontSize: '14px',
+    fontWeight: '600',
     fontFamily: 'inherit',
     outline: 'none',
-    height: '38px',
-    maxHeight: '38px',
-    maxWidth: '180px',
+    height: '48px',
     boxSizing: 'border-box',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    width: '100%',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
   };
 
   return (
     <SafeAreaView style={[styles.container, theme.container]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* Header */}
+        {/* Modern Header */}
         <View style={styles.topHeader}>
           <View>
-            <Text style={[styles.mainTitle, theme.text]}>Budget Tracker</Text>
-            <Text style={[styles.mainSubtitle, theme.subtext]}>Cut-off Date Range Salary Auto-Calculator</Text>
+            <Text style={[styles.mainTitle, theme.text]}>💰 Budget Tracker</Text>
+            <Text style={[styles.mainSubtitle, theme.subtext]}>Cut-off & Daily Salary Auto-Calculator</Text>
           </View>
-          <TouchableOpacity style={[styles.themePill, theme.card]} onPress={toggleTheme}>
+          <TouchableOpacity style={[styles.themePill, theme.card]} onPress={toggleTheme} activeOpacity={0.7}>
             <Text style={styles.themeEmoji}>{isDark ? '☀️ Light' : '🌙 Dark'}</Text>
           </TouchableOpacity>
         </View>
 
         {/* 📅 SELECT CUT-OFF DATE RANGE CARD */}
-        <View style={[styles.simpleCard, theme.card]}>
+        <View style={[styles.cardContainer, theme.card]}>
           <View style={styles.cardHeaderFlexRow}>
-            <Text style={[styles.sectionLabel, theme.subtext]}>SELECT CUT-OFF DATE RANGE</Text>
-            <TouchableOpacity style={styles.calcTriggerBtn} onPress={() => setShowAttendanceModal(true)}>
+            <Text style={[styles.sectionLabel, theme.subtext]}>📅 SELECT CUT-OFF DATE RANGE</Text>
+            <TouchableOpacity style={styles.calcTriggerBtn} onPress={() => setShowAttendanceModal(true)} activeOpacity={0.85}>
               <Text style={styles.calcTriggerBtnText}>📋 Edit Attendance</Text>
             </TouchableOpacity>
           </View>
 
-          {/* From & To Compact Inputs */}
+          {/* From & To Compact Inputs side-by-side */}
           <View style={styles.twoColumnGrid}>
             <View style={styles.gridColumn}>
-              <Text style={[styles.fieldTitle, theme.subtext]}>From (Start Date)</Text>
+              <Text style={[styles.fieldTitle, theme.subtext]}>Start Date</Text>
               <input
                 type="date"
-                style={rangeDateInputStyle}
+                style={dateInputStyle}
                 value={cutoffStart}
                 onChange={(e) => {
                   if (e.target.value) {
@@ -383,10 +366,10 @@ export default function App() {
             </View>
 
             <View style={styles.gridColumn}>
-              <Text style={[styles.fieldTitle, theme.subtext]}>To (End Date)</Text>
+              <Text style={[styles.fieldTitle, theme.subtext]}>End Date</Text>
               <input
                 type="date"
-                style={rangeDateInputStyle}
+                style={dateInputStyle}
                 value={cutoffEnd}
                 onChange={(e) => {
                   if (e.target.value) {
@@ -400,35 +383,37 @@ export default function App() {
 
           {/* Computed Salary Banner */}
           <View style={styles.calcSummaryBox}>
-            <Text style={styles.calcSummaryLabel}>AUTO-CALCULATED SALARY ({cutoffStart} TO {cutoffEnd})</Text>
+            <Text style={styles.calcSummaryLabel}>AUTO-CALCULATED CUT-OFF PAY</Text>
             <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
             <Text style={styles.calcSummarySub}>
-              Attended: {totalAttendedDays} of {totalScheduledDays} Work Days (Base: ₱{cutoffBasePay})
+              Attended {totalAttendedDays} of {totalScheduledDays} Work Days (Base: ₱{cutoffBasePay})
             </Text>
           </View>
         </View>
 
-        {/* Date Filter Row for Expenses */}
-        <View style={[styles.simpleCard, theme.card]}>
-          <Text style={[styles.sectionLabel, theme.subtext]}>VIEW RECORD DATE</Text>
+        {/* View Record Date Selector */}
+        <View style={[styles.cardContainer, theme.card]}>
+          <Text style={[styles.sectionLabel, theme.subtext]}>🔍 VIEW SPECIFIC RECORD DATE</Text>
           <View style={styles.dateControlRow}>
-            <TouchableOpacity style={[styles.dateNavBtn, theme.btnBg]} onPress={() => changeDateByDays(-1)}>
+            <TouchableOpacity style={[styles.dateNavBtn, theme.btnBg]} onPress={() => changeDateByDays(-1)} activeOpacity={0.7}>
               <Text style={[styles.dateNavBtnText, theme.text]}>◀ Prev</Text>
             </TouchableOpacity>
 
-            <input
-              type="date"
-              style={rangeDateInputStyle}
-              value={selectedDate}
-              onChange={(e) => {
-                if (e.target.value) {
-                  setSelectedDate(e.target.value);
-                  setExpenseDate(e.target.value);
-                }
-              }}
-            />
+            <View style={{ flex: 2 }}>
+              <input
+                type="date"
+                style={dateInputStyle}
+                value={selectedDate}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setSelectedDate(e.target.value);
+                    setExpenseDate(e.target.value);
+                  }
+                }}
+              />
+            </View>
 
-            <TouchableOpacity style={[styles.dateNavBtn, theme.btnBg]} onPress={() => changeDateByDays(1)}>
+            <TouchableOpacity style={[styles.dateNavBtn, theme.btnBg]} onPress={() => changeDateByDays(1)} activeOpacity={0.7}>
               <Text style={[styles.dateNavBtnText, theme.text]}>Next ▶</Text>
             </TouchableOpacity>
           </View>
@@ -441,6 +426,7 @@ export default function App() {
                 setSelectedDate(today);
                 setExpenseDate(today);
               }}
+              activeOpacity={0.8}
             >
               <Text style={styles.todayPillText}>Jump to Today ({getTodayString()})</Text>
             </TouchableOpacity>
@@ -453,16 +439,16 @@ export default function App() {
           remainingForDate < 0 || spentPctForDate > 90 ? styles.cardDanger :
           spentPctForDate >= 75 ? styles.cardWarning : styles.cardSuccess
         ]}>
-          <Text style={styles.balanceTag}>REMAINING BALANCE ({selectedDate})</Text>
+          <Text style={styles.balanceTag}>REMAINING BUDGET FOR {selectedDate}</Text>
           <Text style={styles.balanceBigNumber}>{formatPeso(remainingForDate)}</Text>
 
           <View style={styles.balanceMiniRow}>
             <View style={styles.miniStat}>
-              <Text style={styles.miniLabel}>Cut-off Salary</Text>
+              <Text style={styles.miniLabel}>Assigned Salary</Text>
               <Text style={styles.miniValue}>{formatPeso(currentDateSalary)}</Text>
             </View>
             <View style={styles.miniStat}>
-              <Text style={styles.miniLabel}>Spent on {selectedDate}</Text>
+              <Text style={styles.miniLabel}>Spent Today</Text>
               <Text style={styles.miniValue}>{formatPeso(totalDateExpenses)}</Text>
             </View>
           </View>
@@ -471,8 +457,8 @@ export default function App() {
           <View style={styles.progressContainer}>
             <View style={styles.progressHeader}>
               <Text style={styles.progressLabel}>Spent Ratio ({spentPctForDate}%)</Text>
-              <Text style={styles.progressLabel}>
-                {remainingForDate < 0 || spentPctForDate > 90 ? 'Critical' : spentPctForDate >= 75 ? 'Caution' : 'Healthy'}
+              <Text style={styles.progressStatusBadge}>
+                {remainingForDate < 0 || spentPctForDate > 90 ? '🔴 Critical' : spentPctForDate >= 75 ? '🟡 Caution' : '🟢 Healthy'}
               </Text>
             </View>
             <View style={styles.progressBarTrack}>
@@ -482,15 +468,14 @@ export default function App() {
         </View>
 
         {/* Add Expense Form */}
-        <View style={[styles.simpleCard, theme.card]}>
+        <View style={[styles.cardContainer, theme.card]}>
           <View style={styles.cardHeaderFlexRow}>
-            <Text style={[styles.sectionLabel, theme.subtext]}>ADD NEW EXPENSE</Text>
-            
+            <Text style={[styles.sectionLabel, theme.subtext]}>✍️ ADD NEW EXPENSE</Text>
             <View style={styles.inlineDateWrapper}>
-              <Text style={[styles.inlineDateLabel, theme.subtext]}>Date:</Text>
+              <Text style={[styles.inlineDateLabel, theme.subtext]}>For Date:</Text>
               <input
                 type="date"
-                style={compactDateInputStyle}
+                style={[dateInputStyle, { height: '36px', width: '140px', padding: '4px 8px', fontSize: '13px' }]}
                 value={expenseDate}
                 onChange={(e) => setExpenseDate(e.target.value)}
               />
@@ -498,10 +483,10 @@ export default function App() {
           </View>
 
           <View style={styles.formFieldGroup}>
-            <Text style={[styles.fieldTitle, theme.subtext]}>Expense Name</Text>
+            <Text style={[styles.fieldTitle, theme.subtext]}>Expense Description</Text>
             <TextInput
               style={[styles.textInputFull, theme.btnBg, theme.text]}
-              placeholder="e.g. Rice, Electric Bill..."
+              placeholder="e.g. Groceries, Rice, Internet Bill..."
               placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
               value={name}
               onChangeText={setName}
@@ -520,24 +505,27 @@ export default function App() {
             />
           </View>
 
-          <TouchableOpacity style={styles.addExpenseBtn} onPress={handleAddExpense}>
-            <Text style={styles.addExpenseBtnText}>+ Add Expense ({expenseDate})</Text>
+          <TouchableOpacity style={styles.addExpenseBtn} onPress={handleAddExpense} activeOpacity={0.85}>
+            <Text style={styles.addExpenseBtnText}>+ Add Expense to {expenseDate}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Expenses List Card */}
-        <View style={[styles.simpleCard, theme.card]}>
-          <Text style={[styles.sectionLabel, theme.subtext]}>RECORDS FOR {selectedDate}</Text>
+        <View style={[styles.cardContainer, theme.card]}>
+          <Text style={[styles.sectionLabel, theme.subtext]}>📋 EXPENSE RECORDS FOR {selectedDate}</Text>
 
           {dateExpenses.length === 0 ? (
             <View style={styles.emptyBox}>
-              <Text style={[styles.emptyBoxText, theme.subtext]}>No expenses for {selectedDate}</Text>
+              <Text style={{ fontSize: '32px', marginBottom: '8px' }}>🍂</Text>
+              <Text style={[styles.emptyBoxText, theme.subtext]}>No expenses logged for {selectedDate}</Text>
             </View>
           ) : (
             dateExpenses.map(item => (
               <View key={item.id} style={[styles.expenseRow, theme.btnBg]}>
                 <View style={styles.expenseRowLeft}>
-                  <Text style={styles.catEmoji}>💸</Text>
+                  <View style={styles.expenseIconWrapper}>
+                    <Text style={styles.catEmoji}>💸</Text>
+                  </View>
                   <View style={styles.expenseTextInfo}>
                     <Text style={[styles.expNameText, theme.text]}>{item.name}</Text>
                     <Text style={[styles.expDateText, theme.subtext]}>📅 {item.date}</Text>
@@ -546,10 +534,10 @@ export default function App() {
 
                 <View style={styles.expenseRowRight}>
                   <Text style={styles.expAmountText}>-{formatPeso(item.amount)}</Text>
-                  <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconAction}>
+                  <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconAction} activeOpacity={0.6}>
                     <Text style={{ fontSize: 16 }}>✏️</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconAction}>
+                  <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconAction} activeOpacity={0.6}>
                     <Text style={{ fontSize: 16 }}>🗑️</Text>
                   </TouchableOpacity>
                 </View>
@@ -558,35 +546,36 @@ export default function App() {
           )}
 
           <View style={styles.footerBtnRow}>
-            <TouchableOpacity style={[styles.exportBtn, theme.btnBg]} onPress={handleExportCSV}>
+            <TouchableOpacity style={[styles.exportBtn, theme.btnBg]} onPress={handleExportCSV} activeOpacity={0.7}>
               <Text style={[styles.exportBtnText, theme.text]}>📄 Export CSV</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.clearBtn} onPress={handleClearAll}>
+            <TouchableOpacity style={styles.clearBtn} onPress={handleClearAll} activeOpacity={0.7}>
               <Text style={styles.clearBtnText}>Clear All</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <Text style={[styles.pageFooterText, theme.subtext]}>Salary Budget Tracker &bull; Cut-off Range Calculator</Text>
+        <Text style={[styles.pageFooterText, theme.subtext]}>Budget Tracker Pro &bull; Fully Responsive Mobile Design</Text>
 
       </ScrollView>
 
       {/* Attendance & Salary Details Modal */}
       <Modal visible={showAttendanceModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalBox, theme.card, { maxHeight: '90%' }]}>
+          <View style={[styles.modalBox, theme.card, { maxHeight: '85%' }]}>
+            <View style={styles.modalDragHandle} />
             <View style={styles.modalTopRow}>
               <Text style={[styles.modalHeading, theme.text]}>📋 Cut-off Attendance Sheet</Text>
-              <TouchableOpacity onPress={() => setShowAttendanceModal(false)}>
+              <TouchableOpacity onPress={() => setShowAttendanceModal(false)} activeOpacity={0.6}>
                 <Text style={[styles.modalCloseX, theme.subtext]}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={{ gap: 12 }}>
+            <ScrollView contentContainerStyle={{ gap: 14 }} showsVerticalScrollIndicator={false}>
               <View style={[styles.scheduleBanner, theme.btnBg]}>
                 <Text style={[styles.scheduleBannerText, theme.text]}>
-                  💵 Range: {cutoffStart} to {cutoffEnd}{"\n"}
-                  📅 Saturdays = Halfday (Full Pay 1.0x) | Sundays = Rest Day (0x)
+                  💵 Cut-off Schedule Settings:{"\n"}
+                  Saturdays = Halfday (Full Pay 1.0x) | Sundays = Rest Day (0x)
                 </Text>
               </View>
 
@@ -605,8 +594,8 @@ export default function App() {
                 />
               </View>
 
-              <Text style={[styles.fieldTitle, theme.subtext]}>
-                Daily Attendance (Tap row to toggle Full/Halfday/Absent)
+              <Text style={[styles.fieldTitle, theme.subtext, { marginTop: 4 }]}>
+                Daily Cut-off attendance details (Tap row to toggle state)
               </Text>
 
               <View style={styles.attList}>
@@ -619,6 +608,7 @@ export default function App() {
                       key={dateStr}
                       style={[styles.attRow, theme.btnBg]}
                       onPress={() => toggleAttendanceStatus(dateStr)}
+                      activeOpacity={0.8}
                     >
                       <Text style={[styles.attDateText, theme.text]}>
                         📅 {dateStr} ({dayName})
@@ -649,8 +639,8 @@ export default function App() {
                 </Text>
               </View>
 
-              <TouchableOpacity style={styles.addExpenseBtn} onPress={() => setShowAttendanceModal(false)}>
-                <Text style={styles.addExpenseBtnText}>✓ Done</Text>
+              <TouchableOpacity style={styles.addExpenseBtn} onPress={() => setShowAttendanceModal(false)} activeOpacity={0.85}>
+                <Text style={styles.addExpenseBtnText}>✓ Save & Close</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -661,9 +651,10 @@ export default function App() {
       <Modal visible={!!editItem} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalBox, theme.card]}>
+            <View style={styles.modalDragHandle} />
             <View style={styles.modalTopRow}>
-              <Text style={[styles.modalHeading, theme.text]}>Edit Record</Text>
-              <TouchableOpacity onPress={() => setEditItem(null)}>
+              <Text style={[styles.modalHeading, theme.text]}>Edit Record Details</Text>
+              <TouchableOpacity onPress={() => setEditItem(null)} activeOpacity={0.6}>
                 <Text style={[styles.modalCloseX, theme.subtext]}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -671,7 +662,7 @@ export default function App() {
             <Text style={[styles.fieldTitle, theme.subtext]}>Date</Text>
             <input
               type="date"
-              style={compactDateInputStyle}
+              style={dateInputStyle}
               value={editDate}
               onChange={(e) => setEditDate(e.target.value)}
             />
@@ -692,10 +683,10 @@ export default function App() {
             />
 
             <View style={styles.modalActionRow}>
-              <TouchableOpacity style={[styles.exportBtn, theme.btnBg]} onPress={() => setEditItem(null)}>
+              <TouchableOpacity style={[styles.exportBtn, theme.btnBg]} onPress={() => setEditItem(null)} activeOpacity={0.7}>
                 <Text style={theme.text}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.addExpenseBtn} onPress={handleSaveEdit}>
+              <TouchableOpacity style={styles.addExpenseBtn} onPress={handleSaveEdit} activeOpacity={0.85}>
                 <Text style={styles.addExpenseBtnText}>Save Changes</Text>
               </TouchableOpacity>
             </View>
@@ -706,63 +697,71 @@ export default function App() {
   );
 }
 
-// Clean Stylesheet
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   scrollContent: {
-    padding: 12,
-    maxWidth: 520,
+    padding: 16,
+    maxWidth: 600,
     width: '100%',
     alignSelf: 'center',
-    gap: 12,
+    gap: 16,
   },
   topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    paddingVertical: 8,
   },
   mainTitle: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '900',
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
   },
   mainSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '500',
+    marginTop: 2,
   },
   themePill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 99,
     borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
   themeEmoji: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '800',
   },
-  simpleCard: {
-    borderRadius: 16,
-    padding: 16,
+  cardContainer: {
+    borderRadius: 20,
+    padding: 20,
     borderWidth: 1,
-    gap: 12,
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
   },
   sectionLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   calcTriggerBtn: {
     backgroundColor: '#3b82f6',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
   },
   calcTriggerBtnText: {
     color: '#ffffff',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
   },
   cardHeaderFlexRow: {
@@ -775,110 +774,124 @@ const styles = StyleSheet.create({
   inlineDateWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   inlineDateLabel: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
   dateControlRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
+    gap: 10,
   },
   dateNavBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    minHeight: 38,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
   },
   dateNavBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
   },
   todayPill: {
     alignSelf: 'center',
     backgroundColor: '#3b82f6',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 99,
     marginTop: 4,
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
   },
   todayPillText: {
     color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '800',
   },
 
-  /* Primary Balance Card */
+  /* Primary Gradient Balance Card */
   mainBalanceCard: {
-    borderRadius: 18,
-    padding: 20,
-    gap: 12,
+    borderRadius: 24,
+    padding: 24,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
   },
   cardSuccess: {
-    backgroundColor: '#065f46',
+    backgroundColor: '#059669',
   },
   cardWarning: {
-    backgroundColor: '#92400e',
+    backgroundColor: '#d97706',
   },
   cardDanger: {
-    backgroundColor: '#991b1b',
+    backgroundColor: '#dc2626',
   },
   balanceTag: {
     fontSize: 11,
-    fontWeight: '800',
-    color: 'rgba(255, 255, 255, 0.75)',
-    letterSpacing: 1,
+    fontWeight: '900',
+    color: 'rgba(255, 255, 255, 0.85)',
+    letterSpacing: 1.2,
   },
   balanceBigNumber: {
-    fontSize: 32,
+    fontSize: 38,
     fontWeight: '900',
     color: '#ffffff',
-    letterSpacing: -0.5,
+    letterSpacing: -1,
   },
   balanceMiniRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 4,
   },
   miniStat: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    padding: 10,
-    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    padding: 12,
+    borderRadius: 14,
   },
   miniLabel: {
-    fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '700',
   },
   miniValue: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '800',
     color: '#ffffff',
-    marginTop: 2,
+    marginTop: 4,
   },
   progressContainer: {
-    marginTop: 4,
-    gap: 4,
+    gap: 6,
   },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   progressLabel: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '700',
   },
+  progressStatusBadge: {
+    fontSize: 11,
+    fontWeight: '800',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    color: '#ffffff',
+  },
   progressBarTrack: {
-    height: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    height: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
     borderRadius: 99,
     overflow: 'hidden',
   },
@@ -890,36 +903,42 @@ const styles = StyleSheet.create({
 
   /* Forms */
   formFieldGroup: {
-    gap: 4,
+    gap: 6,
   },
   fieldTitle: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
   textInputFull: {
-    height: 44,
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    height: 48,
+    borderRadius: 12,
+    paddingHorizontal: 16,
     borderWidth: 1,
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '600',
     outlineStyle: 'none',
     width: '100%',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
   },
   twoColumnGrid: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
   },
   gridColumn: {
     flex: 1,
-    gap: 4,
+    gap: 6,
   },
   addExpenseBtn: {
     backgroundColor: '#3b82f6',
-    height: 46,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
+    marginTop: 8,
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
   addExpenseBtnText: {
     color: '#ffffff',
@@ -927,55 +946,40 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 
-  /* Attendance Calculator Styles */
+  /* Attendance styles */
   scheduleBanner: {
-    padding: 10,
-    borderRadius: 8,
+    padding: 12,
+    borderRadius: 12,
     borderWidth: 1,
   },
   scheduleBannerText: {
-    fontSize: 11,
-    fontWeight: '700',
-    lineHeight: 16,
-  },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  infoBoxLabel: {
     fontSize: 12,
-    fontWeight: '700',
-  },
-  infoBoxVal: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '600',
+    lineHeight: 18,
   },
   attList: {
-    gap: 6,
-    maxHeight: 240,
+    gap: 8,
+    maxHeight: 280,
     overflowY: 'auto',
+    paddingRight: 4,
   },
   attRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 10,
-    borderRadius: 8,
+    padding: 12,
+    borderRadius: 12,
     borderWidth: 1,
     gap: 8,
-    flexWrap: 'wrap',
   },
   attDateText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
   },
   attBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
   },
   attFull: { backgroundColor: 'rgba(16, 185, 129, 0.2)' },
   attHalf: { backgroundColor: 'rgba(245, 158, 11, 0.2)' },
@@ -987,65 +991,83 @@ const styles = StyleSheet.create({
   },
   calcSummaryBox: {
     backgroundColor: '#059669',
-    padding: 14,
-    borderRadius: 12,
+    padding: 16,
+    borderRadius: 16,
     alignItems: 'center',
-    gap: 2,
+    gap: 4,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
   calcSummaryLabel: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '900',
     color: 'rgba(255, 255, 255, 0.85)',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   calcSummaryVal: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '900',
     color: '#ffffff',
   },
   calcSummarySub: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '600',
   },
 
   /* Expense List */
   emptyBox: {
-    paddingVertical: 24,
+    paddingVertical: 32,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyBoxText: {
     fontSize: 14,
+    fontWeight: '600',
   },
   expenseRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 14,
     borderWidth: 1,
-    gap: 8,
-    flexWrap: 'wrap',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
   },
   expenseRowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     flex: 1,
     minWidth: 140,
   },
+  expenseIconWrapper: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   catEmoji: {
-    fontSize: 22,
+    fontSize: 20,
   },
   expenseTextInfo: {
     flex: 1,
   },
   expNameText: {
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '700',
   },
   expDateText: {
-    fontSize: 11,
+    fontSize: 12,
+    marginTop: 2,
   },
   expenseRowRight: {
     flexDirection: 'row',
@@ -1053,96 +1075,118 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   expAmountText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
     color: '#ef4444',
+    marginRight: 4,
   },
   iconAction: {
-    padding: 4,
+    padding: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    borderRadius: 8,
   },
   footerBtnRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: 10,
+    gap: 10,
   },
   exportBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
     borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   exportBtnText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
   },
   clearBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   clearBtnText: {
     color: '#ef4444',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
   },
   pageFooterText: {
     textAlign: 'center',
     fontSize: 12,
-    marginVertical: 8,
+    marginVertical: 12,
   },
 
-  /* Modal */
+  /* Bottom sheet-like Modal */
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    justifyContent: 'flex-end',
   },
   modalBox: {
     width: '100%',
-    maxWidth: 440,
-    borderRadius: 16,
-    padding: 20,
-    gap: 12,
+    maxWidth: 600,
+    alignSelf: 'center',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    gap: 14,
     borderWidth: 1,
+    borderBottomWidth: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+  },
+  modalDragHandle: {
+    width: 48,
+    height: 5,
+    backgroundColor: '#cbd5e1',
+    borderRadius: 99,
+    alignSelf: 'center',
+    marginBottom: 8,
   },
   modalTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 4,
   },
   modalHeading: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
   },
   modalCloseX: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
   },
   modalActionRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 10,
-    marginTop: 10,
+    gap: 12,
+    marginTop: 12,
   }
 });
 
-// Themes
+// Curated Sleek Colors
 const darkTheme = {
-  container: { backgroundColor: '#0f172a' },
-  card: { backgroundColor: '#1e293b', borderColor: '#334155' },
-  btnBg: { backgroundColor: '#0f172a', borderColor: '#334155' },
+  container: { backgroundColor: '#0b0f19' },
+  card: { backgroundColor: '#161e2e', borderColor: '#242f41' },
+  btnBg: { backgroundColor: '#0d131f', borderColor: '#242f41' },
   text: { color: '#f8fafc' },
   subtext: { color: '#94a3b8' },
 };
 
 const lightTheme = {
-  container: { backgroundColor: '#f8fafc' },
-  card: { backgroundColor: '#ffffff', borderColor: '#e2e8f0' },
-  btnBg: { backgroundColor: '#f1f5f9', borderColor: '#cbd5e1' },
-  text: { color: '#0f172a' },
-  subtext: { color: '#64748b' },
+  container: { backgroundColor: '#f3f4f6' },
+  card: { backgroundColor: '#ffffff', borderColor: '#e5e7eb' },
+  btnBg: { backgroundColor: '#f9fafb', borderColor: '#e5e7eb' },
+  text: { color: '#111827' },
+  subtext: { color: '#6b7280' },
 };
