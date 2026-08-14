@@ -11,6 +11,128 @@ import {
   StatusBar
 } from 'react-native';
 
+// Professional Vector SVG Icon Components
+const SvgIcon = ({ size = 20, color = "#94a3b8", children, style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
+    {children}
+  </svg>
+);
+
+const WalletIcon = (props) => (
+  <SvgIcon {...props}>
+    <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+    <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+    <path d="M18 12a2 2 0 0 0 0 4h4v-4z" />
+  </SvgIcon>
+);
+
+const BriefcaseIcon = (props) => (
+  <SvgIcon {...props}>
+    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+  </SvgIcon>
+);
+
+const PlusIcon = (props) => (
+  <SvgIcon {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="16" />
+    <line x1="8" y1="12" x2="16" y2="12" />
+  </SvgIcon>
+);
+
+const ChartIcon = (props) => (
+  <SvgIcon {...props}>
+    <line x1="18" y1="20" x2="18" y2="10" />
+    <line x1="12" y1="20" x2="12" y2="4" />
+    <line x1="6" y1="20" x2="6" y2="14" />
+  </SvgIcon>
+);
+
+const ReceiptIcon = (props) => (
+  <SvgIcon {...props}>
+    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z" />
+    <line x1="8" y1="6" x2="16" y2="6" />
+    <line x1="8" y1="10" x2="16" y2="10" />
+    <line x1="8" y1="14" x2="14" y2="14" />
+  </SvgIcon>
+);
+
+const CalendarIcon = (props) => (
+  <SvgIcon {...props}>
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </SvgIcon>
+);
+
+const SunIcon = (props) => (
+  <SvgIcon {...props}>
+    <circle cx="12" cy="12" r="5" />
+    <line x1="12" y1="1" x2="12" y2="3" />
+    <line x1="12" y1="21" x2="12" y2="23" />
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+    <line x1="1" y1="12" x2="3" y2="12" />
+    <line x1="21" y1="12" x2="23" y2="12" />
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+  </SvgIcon>
+);
+
+const MoonIcon = (props) => (
+  <SvgIcon {...props}>
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </SvgIcon>
+);
+
+const EditIcon = (props) => (
+  <SvgIcon {...props}>
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </SvgIcon>
+);
+
+const TrashIcon = (props) => (
+  <SvgIcon {...props}>
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+  </SvgIcon>
+);
+
+const DownloadIcon = (props) => (
+  <SvgIcon {...props}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </SvgIcon>
+);
+
+const ChevronLeftIcon = (props) => (
+  <SvgIcon {...props}>
+    <polyline points="15 18 9 12 15 6" />
+  </SvgIcon>
+);
+
+const ChevronRightIcon = (props) => (
+  <SvgIcon {...props}>
+    <polyline points="9 18 15 12 9 6" />
+  </SvgIcon>
+);
+
+const EmptyIcon = (props) => (
+  <SvgIcon {...props}>
+    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+  </SvgIcon>
+);
+
+const CheckIcon = (props) => (
+  <SvgIcon {...props}>
+    <polyline points="20 6 9 17 4 12" />
+  </SvgIcon>
+);
+
 const getTodayString = (d = new Date()) => {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -318,6 +440,8 @@ export default function App() {
 
   // Resolve input class depending on theme
   const dateInputClassName = isDark ? "modern-date-input" : "modern-date-input light-theme-picker";
+  const iconColor = isDark ? "#f8fafc" : "#0f172a";
+  const mutedIconColor = isDark ? "#94a3b8" : "#64748b";
 
   return (
     <SafeAreaView style={[styles.container, theme.container]}>
@@ -326,27 +450,34 @@ export default function App() {
         
         {/* Modern Header */}
         <View style={styles.topHeader}>
-          <View>
-            <Text style={[styles.mainTitle, theme.text]}>💰 Budget Tracker</Text>
-            <Text style={[styles.mainSubtitle, theme.subtext]}>Independent Cut-off & Daily Budget Calculator</Text>
+          <View style={styles.titleRowFlex}>
+            <WalletIcon size={28} color="#3b82f6" />
+            <View>
+              <Text style={[styles.mainTitle, theme.text]}>Budget Tracker</Text>
+              <Text style={[styles.mainSubtitle, theme.subtext]}>Salary & Expense Management</Text>
+            </View>
           </View>
           <TouchableOpacity style={[styles.themePill, theme.card]} onPress={toggleTheme} activeOpacity={0.7}>
-            <Text style={styles.themeEmoji}>{isDark ? '☀️ Light' : '🌙 Dark'}</Text>
+            {isDark ? <SunIcon size={18} color="#f59e0b" /> : <MoonIcon size={18} color="#3b82f6" />}
           </TouchableOpacity>
         </View>
 
-        {/* HTML div grid wrapper for reliable sideways desktop columns */}
+        {/* HTML div grid wrapper for reliable sideways desktop columns & clear card separation */}
         <div className="responsive-row">
           
           {/* COLUMN 1 */}
           <div className="responsive-col">
             
-            {/* FEATURE 1: 💼 CUT-OFF SALARY CALCULATOR CARD */}
+            {/* FEATURE 1: CUT-OFF SALARY CALCULATOR CARD */}
             <View style={[styles.cardContainer, theme.card]}>
               <View style={styles.cardHeaderFlexRow}>
-                <Text style={[styles.sectionLabel, theme.text]}>💼 Cut-off Salary Calculator</Text>
+                <View style={styles.headerTitleGroup}>
+                  <BriefcaseIcon size={20} color="#3b82f6" />
+                  <Text style={[styles.sectionLabel, theme.text]}>Cut-off Salary Calculator</Text>
+                </View>
                 <TouchableOpacity style={styles.calcTriggerBtn} onPress={() => setShowAttendanceModal(true)} activeOpacity={0.85}>
-                  <Text style={styles.calcTriggerBtnText}>📋 Attendance</Text>
+                  <CalendarIcon size={15} color="#ffffff" style={{ marginRight: 6 }} />
+                  <Text style={styles.calcTriggerBtnText}>Attendance</Text>
                 </TouchableOpacity>
               </View>
 
@@ -388,7 +519,7 @@ export default function App() {
                 <Text style={styles.calcSummaryLabel}>AUTO-CALCULATED CUT-OFF PAY</Text>
                 <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
                 <Text style={styles.calcSummarySub}>
-                  Semi-Monthly Base: {formatPeso(basePay)} • Attended {totalAttendedDays} of {totalScheduledDays} Work Days
+                  Base: {formatPeso(basePay)} • Attended {totalAttendedDays} of {totalScheduledDays} Work Days
                 </Text>
               </View>
             </View>
@@ -396,7 +527,10 @@ export default function App() {
             {/* ADD EXPENSE FORM */}
             <View style={[styles.cardContainer, theme.card]}>
               <View style={styles.cardHeaderFlexRow}>
-                <Text style={[styles.sectionLabel, theme.text]}>✍️ Add New Expense</Text>
+                <View style={styles.headerTitleGroup}>
+                  <PlusIcon size={20} color="#3b82f6" />
+                  <Text style={[styles.sectionLabel, theme.text]}>Add New Expense</Text>
+                </View>
               </View>
 
               <View style={styles.formFieldGroup}>
@@ -433,7 +567,7 @@ export default function App() {
               </View>
 
               <TouchableOpacity style={styles.addExpenseBtn} onPress={handleAddExpense} activeOpacity={0.85}>
-                <Text style={styles.addExpenseBtnText}>+ Add Expense to {expenseDate}</Text>
+                <Text style={styles.addExpenseBtnText}>+ Add Expense for {expenseDate}</Text>
               </TouchableOpacity>
             </View>
 
@@ -442,14 +576,17 @@ export default function App() {
           {/* COLUMN 2 */}
           <div className="responsive-col">
             
-            {/* FEATURE 2: 📊 DAILY EXPENSE CALCULATOR */}
+            {/* FEATURE 2: DAILY EXPENSE CALCULATOR */}
             <View style={[styles.cardContainer, theme.card]}>
-              <Text style={[styles.sectionLabel, theme.text]}>📊 Daily Budget Calculator</Text>
+              <View style={styles.headerTitleGroup}>
+                <ChartIcon size={20} color="#3b82f6" />
+                <Text style={[styles.sectionLabel, theme.text]}>Daily Budget Calculator</Text>
+              </View>
               
               {/* Selected Date navigation inside the calculator */}
               <View style={styles.dateControlRow}>
                 <TouchableOpacity style={[styles.dateNavBtn, theme.btnBg]} onPress={() => changeDateByDays(-1)} activeOpacity={0.7}>
-                  <Text style={[styles.dateNavBtnText, theme.text]}>◀ Prev</Text>
+                  <ChevronLeftIcon size={18} color={iconColor} />
                 </TouchableOpacity>
 
                 <View style={{ flex: 2 }}>
@@ -467,7 +604,7 @@ export default function App() {
                 </View>
 
                 <TouchableOpacity style={[styles.dateNavBtn, theme.btnBg]} onPress={() => changeDateByDays(1)} activeOpacity={0.7}>
-                  <Text style={[styles.dateNavBtnText, theme.text]}>Next ▶</Text>
+                  <ChevronRightIcon size={18} color={iconColor} />
                 </TouchableOpacity>
               </View>
 
@@ -495,9 +632,12 @@ export default function App() {
                 <Text style={styles.balanceBigNumber}>{formatPeso(remainingForDate)}</Text>
 
                 <View style={styles.balanceMiniRow}>
-                  {/* EDITABLE DAILY INCOME AMOUNT WITH CUSTOM INPUT */}
+                  {/* EDITABLE DAILY INCOME AMOUNT WITH PROFESSIONAL ICON */}
                   <View style={styles.miniStatEditable}>
-                    <Text style={styles.miniLabelEditable}>Daily Income (₱) ✏️</Text>
+                    <View style={styles.miniLabelFlexRow}>
+                      <Text style={styles.miniLabelEditable}>Daily Income (₱)</Text>
+                      <EditIcon size={12} color="#ffffff" />
+                    </View>
                     <TextInput
                       style={styles.editableSalaryInput}
                       value={dailySalaries[selectedDate] !== undefined ? dailySalaries[selectedDate].toString() : (defaultDailyIncome || '')}
@@ -528,7 +668,7 @@ export default function App() {
                   <View style={styles.progressHeader}>
                     <Text style={styles.progressLabel}>Spent Ratio ({spentPctForDate}%)</Text>
                     <Text style={styles.progressStatusBadge}>
-                      {remainingForDate < 0 || spentPctForDate > 90 ? '🔴 Critical' : spentPctForDate >= 75 ? '🟡 Caution' : '🟢 Healthy'}
+                      {remainingForDate < 0 || spentPctForDate > 90 ? 'Critical' : spentPctForDate >= 75 ? 'Caution' : 'Healthy'}
                     </Text>
                   </View>
                   <View style={styles.progressBarTrack}>
@@ -548,11 +688,14 @@ export default function App() {
 
             {/* EXPENSE RECORDS LIST */}
             <View style={[styles.cardContainer, theme.card]}>
-              <Text style={[styles.sectionLabel, theme.text]}>📋 Expenses for {selectedDate}</Text>
+              <View style={styles.headerTitleGroup}>
+                <ReceiptIcon size={20} color="#3b82f6" />
+                <Text style={[styles.sectionLabel, theme.text]}>Expenses for {selectedDate}</Text>
+              </View>
 
               {dateExpenses.length === 0 ? (
                 <View style={styles.emptyBox}>
-                  <Text style={{ fontSize: '36px', marginBottom: '6px' }}>🍂</Text>
+                  <EmptyIcon size={38} color={mutedIconColor} style={{ marginBottom: 8 }} />
                   <Text style={[styles.emptyBoxTitle, theme.text]}>No Expenses Logged</Text>
                   <Text style={[styles.emptyBoxText, theme.subtext]}>Tap "+ Add Expense" to log your daily purchases.</Text>
                 </View>
@@ -561,21 +704,21 @@ export default function App() {
                   <View key={item.id} style={[styles.expenseRow, theme.btnBg]}>
                     <View style={styles.expenseRowLeft}>
                       <View style={styles.expenseIconWrapper}>
-                        <Text style={styles.catEmoji}>💸</Text>
+                        <ReceiptIcon size={18} color="#ef4444" />
                       </View>
                       <View style={styles.expenseTextInfo}>
                         <Text style={[styles.expNameText, theme.text]}>{item.name}</Text>
-                        <Text style={[styles.expDateText, theme.subtext]}>📅 {item.date}</Text>
+                        <Text style={[styles.expDateText, theme.subtext]}>{item.date}</Text>
                       </View>
                     </View>
 
                     <View style={styles.expenseRowRight}>
                       <Text style={styles.expAmountText}>-{formatPeso(item.amount)}</Text>
                       <TouchableOpacity onPress={() => openEdit(item)} style={[styles.iconAction, theme.btnBg]} activeOpacity={0.6}>
-                        <Text style={{ fontSize: 15 }}>✏️</Text>
+                        <EditIcon size={15} color={iconColor} />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => handleDelete(item.id)} style={[styles.iconAction, theme.btnBg]} activeOpacity={0.6}>
-                        <Text style={{ fontSize: 15 }}>🗑️</Text>
+                        <TrashIcon size={15} color="#ef4444" />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -584,9 +727,11 @@ export default function App() {
 
               <View style={styles.footerBtnRow}>
                 <TouchableOpacity style={styles.exportBtnPrimary} onPress={handleExportCSV} activeOpacity={0.8}>
-                  <Text style={styles.exportBtnPrimaryText}>📄 Export CSV</Text>
+                  <DownloadIcon size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                  <Text style={styles.exportBtnPrimaryText}>Export CSV</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.clearBtn} onPress={handleClearAll} activeOpacity={0.7}>
+                  <TrashIcon size={16} color="#ef4444" style={{ marginRight: 6 }} />
                   <Text style={styles.clearBtnText}>Clear All</Text>
                 </TouchableOpacity>
               </View>
@@ -606,7 +751,7 @@ export default function App() {
           <View style={[styles.modalBox, theme.card, { maxHeight: '85%' }]}>
             <View style={styles.modalDragHandle} />
             <View style={styles.modalTopRow}>
-              <Text style={[styles.modalHeading, theme.text]}>📋 Cut-off Attendance Sheet</Text>
+              <Text style={[styles.modalHeading, theme.text]}>Cut-off Attendance Sheet</Text>
               <TouchableOpacity onPress={() => setShowAttendanceModal(false)} activeOpacity={0.6}>
                 <Text style={[styles.modalCloseX, theme.subtext]}>✕</Text>
               </TouchableOpacity>
@@ -615,7 +760,7 @@ export default function App() {
             <ScrollView contentContainerStyle={{ gap: 14 }} showsVerticalScrollIndicator={false}>
               <View style={[styles.scheduleBanner, theme.btnBg]}>
                 <Text style={[styles.scheduleBannerText, theme.text]}>
-                  💵 Semi-Monthly Cut-off Settings:{"\n"}
+                  Semi-Monthly Cut-off Settings:{"\n"}
                   Monthly Net: ₱21,000 | Semi-Monthly Base: ₱10,500{"\n"}
                   Saturdays = Halfday (Full Pay 1.0x) | Sundays = Rest Day (0x)
                 </Text>
@@ -654,7 +799,7 @@ export default function App() {
                       activeOpacity={0.8}
                     >
                       <Text style={[styles.attDateText, theme.text]}>
-                        📅 {dateStr} ({dayName})
+                        {dateStr} ({dayName})
                       </Text>
                       
                       <View style={[
@@ -663,10 +808,10 @@ export default function App() {
                         status === 'HALF' ? styles.attHalf : styles.attAbsent
                       ]}>
                         <Text style={styles.attBadgeText}>
-                          {status === 'SAT_FULL' ? '🟢 Sat (Full Pay)' :
-                           status === 'FULL' ? '🟢 Full Day' :
-                           status === 'HALF' ? '🟡 Half Day' :
-                           status === 'REST_DAY' ? '⚪ Sunday Rest' : '🔴 Absent'}
+                          {status === 'SAT_FULL' ? 'Sat (Full Pay)' :
+                           status === 'FULL' ? 'Full Day' :
+                           status === 'HALF' ? 'Half Day' :
+                           status === 'REST_DAY' ? 'Sunday Rest' : 'Absent'}
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -683,7 +828,8 @@ export default function App() {
               </View>
 
               <TouchableOpacity style={styles.addExpenseBtn} onPress={() => setShowAttendanceModal(false)} activeOpacity={0.85}>
-                <Text style={styles.addExpenseBtnText}>✓ Save & Close</Text>
+                <CheckIcon size={18} color="#ffffff" style={{ marginRight: 6 }} />
+                <Text style={styles.addExpenseBtnText}>Save & Close</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -760,10 +906,20 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255, 255, 255, 0.06)',
     marginBottom: 4,
   },
+  titleRowFlex: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   mainTitle: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '900',
-    letterSpacing: -0.8,
+    letterSpacing: -0.5,
   },
   mainSubtitle: {
     fontSize: 13,
@@ -771,18 +927,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   themePill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    width: 40,
+    height: 40,
     borderRadius: 99,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-  },
-  themeEmoji: {
-    fontSize: 13,
-    fontWeight: '800',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardContainer: {
     borderRadius: 20,
@@ -795,7 +945,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   sectionLabel: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
@@ -804,6 +954,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   calcTriggerBtnText: {
     color: '#ffffff',
@@ -823,16 +975,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   dateNavBtn: {
-    paddingHorizontal: 16,
+    width: 48,
+    height: 48,
     borderRadius: 12,
     borderWidth: 1,
-    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  dateNavBtnText: {
-    fontSize: 14,
-    fontWeight: '800',
   },
   todayPill: {
     alignSelf: 'center',
@@ -901,6 +1049,11 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.35)',
     padding: 10,
     borderRadius: 12,
+  },
+  miniLabelFlexRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   miniLabel: {
     fontSize: 11,
@@ -989,6 +1142,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
     marginTop: 8,
     shadowColor: '#3b82f6',
     shadowOffset: { width: 0, height: 4 },
@@ -1105,9 +1259,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  catEmoji: {
-    fontSize: 20,
-  },
   expenseTextInfo: {
     flex: 1,
   },
@@ -1131,9 +1282,12 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   iconAction: {
-    padding: 8,
+    width: 36,
+    height: 36,
     borderRadius: 10,
     borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   footerBtnRow: {
     flexDirection: 'row',
@@ -1146,6 +1300,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 12,
     backgroundColor: '#3b82f6',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1168,6 +1323,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#ef4444',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
