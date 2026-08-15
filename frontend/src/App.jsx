@@ -357,13 +357,13 @@ export default function App() {
     saveData(dailySalaries, expenses, isDark, newAttMap);
   };
 
-  // Add Expense
+  // Add Expense with guaranteed unique ID
   const handleAddExpense = () => {
     const amt = parseFloat(amount);
     if (!name.trim() || isNaN(amt) || amt <= 0) return;
 
     const newItem = {
-      id: Date.now().toString(),
+      id: Date.now().toString() + '_' + Math.random().toString(36).substring(2, 9),
       name: name.trim(),
       amount: amt,
       date: expenseDate || selectedDate
@@ -377,7 +377,7 @@ export default function App() {
     setAmount('');
   };
 
-  // Delete Expense
+  // Delete Single Expense (only removes this specific item by unique ID)
   const handleDelete = (id) => {
     const updated = expenses.filter(exp => exp.id !== id);
     setExpenses(updated);
@@ -414,12 +414,15 @@ export default function App() {
     setEditItem(null);
   };
 
-  // Clear All
-  const handleClearAll = () => {
-    if (expenses.length === 0) return;
-    if (confirm('Clear all recorded expenses?')) {
-      setExpenses([]);
-      saveData(dailySalaries, [], isDark);
+  // Clear Expenses ONLY for the currently selected date (keeps expenses on all other dates!)
+  const handleClearSelectedDateExpenses = () => {
+    const targetDateExpenses = expenses.filter(exp => exp.date === selectedDate);
+    if (targetDateExpenses.length === 0) return;
+    
+    if (confirm(`Delete all ${targetDateExpenses.length} expense(s) logged for ${selectedDate}?`)) {
+      const updated = expenses.filter(exp => exp.date !== selectedDate);
+      setExpenses(updated);
+      saveData(dailySalaries, updated, isDark);
     }
   };
 
@@ -763,9 +766,9 @@ export default function App() {
                   <DownloadIcon size={16} color="#ffffff" style={{ marginRight: 6 }} />
                   <Text style={styles.exportBtnPrimaryText}>Export CSV</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.clearBtn} onPress={handleClearAll} activeOpacity={0.7}>
+                <TouchableOpacity style={styles.clearBtn} onPress={handleClearSelectedDateExpenses} activeOpacity={0.7}>
                   <TrashIcon size={16} color="#ef4444" style={{ marginRight: 6 }} />
-                  <Text style={styles.clearBtnText}>Clear All</Text>
+                  <Text style={styles.clearBtnText}>Clear Date</Text>
                 </TouchableOpacity>
               </View>
             </View>
