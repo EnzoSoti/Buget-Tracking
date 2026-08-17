@@ -11,7 +11,7 @@ import {
   StatusBar
 } from 'react-native';
 
-// Professional Vector SVG Icon Components (Lucide / Linear FinTech style)
+// Professional Vector SVG Icon Components (Linear / FinTech style)
 const SvgIcon = ({ size = 18, color = "#94a3b8", children, style }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
     {children}
@@ -140,19 +140,31 @@ const CheckIcon = (props) => (
   </SvgIcon>
 );
 
-const SlidersIcon = (props) => (
+const AlertTriangleIcon = (props) => (
   <SvgIcon {...props}>
-    <line x1="4" y1="21" x2="4" y2="14" />
-    <line x1="4" y1="10" x2="4" y2="3" />
-    <line x1="12" y1="21" x2="12" y2="12" />
-    <line x1="12" y1="8" x2="12" y2="3" />
-    <line x1="20" y1="21" x2="20" y2="16" />
-    <line x1="20" y1="12" x2="20" y2="3" />
-    <line x1="1" y1="14" x2="7" y2="14" />
-    <line x1="9" y1="8" x2="15" y2="8" />
-    <line x1="17" y1="16" x2="23" y2="16" />
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
   </SvgIcon>
 );
+
+const ZapIcon = (props) => (
+  <SvgIcon {...props}>
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </SvgIcon>
+);
+
+const EXPENSE_CATEGORIES = [
+  { id: 'food', label: 'Food / Meals', icon: '🍔', prefix: 'Meal: ' },
+  { id: 'transport', label: 'Transport / Commute', icon: '🚗', prefix: 'Fare / Gas: ' },
+  { id: 'bills', label: 'Utilities / Bills', icon: '⚡', prefix: 'Bill: ' },
+  { id: 'groceries', label: 'Groceries / Market', icon: '🛒', prefix: 'Groceries: ' },
+  { id: 'snacks', label: 'Coffee / Snacks', icon: '☕', prefix: 'Coffee: ' },
+  { id: 'health', label: 'Health / Meds', icon: '💊', prefix: 'Medicine: ' },
+  { id: 'misc', label: 'Shopping / Misc', icon: '🛍️', prefix: 'Purchase: ' },
+];
+
+const AMOUNT_CHIPS = [50, 100, 200, 500, 1000];
 
 const getTodayString = (d = new Date()) => {
   const year = d.getFullYear();
@@ -206,6 +218,9 @@ export default function App() {
   // Active Tab for Segmented Control Navigation: 'ALL' | 'DAILY' | 'SALARY' | 'EXPENSES'
   const [activeTab, setActiveTab] = useState('ALL');
   
+  // Toast Alert State: { message: string, type: 'success' | 'warning' | 'error' }
+  const [toast, setToast] = useState(null);
+  
   // Customizable Monthly Net Salary (Default ₱21,000)
   const [monthlySalary, setMonthlySalary] = useState('21000');
   
@@ -242,6 +257,14 @@ export default function App() {
   const [editName, setEditName] = useState('');
   const [editAmount, setEditAmount] = useState('');
   const [editDate, setEditDate] = useState(getTodayString());
+
+  // Show Toast Helper
+  const showToast = (message, type = 'success', duration = 3200) => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, duration);
+  };
 
   // Load Saved Data
   useEffect(() => {
@@ -325,6 +348,58 @@ export default function App() {
     setExpenseDate(newStr);
   };
 
+  // Apply Quick Cut-off Presets
+  const applyCutoffPreset = (presetType) => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth(); // 0-indexed
+
+    let start = '';
+    let end = '';
+
+    if (presetType === 'CUTOFF_1') {
+      // 1st Cut-off: 11th to 25th of current month
+      start = `${year}-${String(month + 1).padStart(2, '0')}-11`;
+      end = `${year}-${String(month + 1).padStart(2, '0')}-25`;
+      showToast(`Set to 1st Cut-off: ${start} → ${end}`, 'success');
+    } else if (presetType === 'CUTOFF_2') {
+      // 2nd Cut-off: 26th of previous/current month to 10th of current/next month
+      const prevMonth = month === 0 ? 11 : month - 1;
+      const prevYear = month === 0 ? year - 1 : year;
+      start = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-26`;
+      end = `${year}-${String(month + 1).padStart(2, '0')}-10`;
+      showToast(`Set to 2nd Cut-off: ${start} → ${end}`, 'success');
+    } else if (presetType === 'FULL_MONTH') {
+      // Full current month: 1st to last day
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      start = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      end = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+      showToast(`Set to Full Month: ${start} → ${end}`, 'success');
+    }
+
+    if (start && end) {
+      setCutoffStart(start);
+      setCutoffEnd(end);
+      saveData(dailySalaries, expenses, isDark, attendanceMap, { cutoffStart: start, cutoffEnd: end });
+    }
+  };
+
+  // Quick Amount Chip Handler
+  const handleAddAmountChip = (chipValue) => {
+    const currentVal = parseFloat(amount) || 0;
+    const nextVal = currentVal + chipValue;
+    setAmount(nextVal.toString());
+  };
+
+  // Quick Category Click Handler
+  const handleSelectCategory = (cat) => {
+    if (!name || name.trim() === '' || EXPENSE_CATEGORIES.some(c => name.startsWith(c.prefix))) {
+      setName(cat.prefix);
+    } else {
+      setName(`${cat.prefix}${name}`);
+    }
+  };
+
   // Resolve attendance status for a date
   const getResolvedStatus = (dateStr) => {
     if (attendanceMap[dateStr]) return attendanceMap[dateStr];
@@ -333,15 +408,18 @@ export default function App() {
     return 'FULL';
   };
 
+  // Date Range Restriction Check
+  const isDateRangeInvalid = cutoffEnd < cutoffStart;
+
   // --- DYNAMIC CUT-OFF SALARY & TARDINESS CALCULATIONS ---
-  const rangeDates = getDateRangeArray(cutoffStart, cutoffEnd);
+  const rangeDates = !isDateRangeInvalid ? getDateRangeArray(cutoffStart, cutoffEnd) : [];
   
   let grossCutoffSalary = 0;
   let totalScheduledDays = 0;
   let totalAttendedDays = 0;
   let totalTardyMinutes = 0;
 
-  const userMonthly = parseFloat(monthlySalary) || 21000;
+  const userMonthly = Math.max(0, parseFloat(monthlySalary) || 21000);
   // Standard daily rate for workdays based on 26 workdays per month
   const dailyWorkRate = userMonthly / 26;
   // Per-minute rate: dailyWorkRate / 480 (8 hours * 60 mins)
@@ -368,7 +446,7 @@ export default function App() {
     grossCutoffSalary += dailyWorkRate * multiplier;
 
     if (multiplier > 0 && tardyMap[d]) {
-      const mins = parseFloat(tardyMap[d]) || 0;
+      const mins = Math.min(480, Math.max(0, parseFloat(tardyMap[d]) || 0));
       totalTardyMinutes += mins;
     }
   });
@@ -397,16 +475,30 @@ export default function App() {
     saveData(dailySalaries, expenses, isDark, newAttMap);
   };
 
-  // Add Expense with guaranteed unique ID
+  // Add Expense with Guardrails & Validation
   const handleAddExpense = () => {
+    const trimmedName = name.trim();
     const amt = parseFloat(amount);
-    if (!name.trim() || isNaN(amt) || amt <= 0) return;
+
+    // Restriction 1: Required Name
+    if (!trimmedName) {
+      showToast('Please enter an expense description!', 'error');
+      return;
+    }
+
+    // Restriction 2: Positive numeric amount
+    if (isNaN(amt) || amt <= 0) {
+      showToast('Please enter a valid expense amount greater than ₱0!', 'error');
+      return;
+    }
+
+    const targetDate = expenseDate || selectedDate;
 
     const newItem = {
       id: Date.now().toString() + '_' + Math.random().toString(36).substring(2, 9),
-      name: name.trim(),
+      name: trimmedName,
       amount: amt,
-      date: expenseDate || selectedDate
+      date: targetDate
     };
 
     const updated = [newItem, ...expenses];
@@ -415,13 +507,28 @@ export default function App() {
 
     setName('');
     setAmount('');
+
+    // Check if added expense causes overspending on targetDate
+    const existingDateTotal = expenses.filter(e => e.date === targetDate).reduce((s, i) => s + i.amount, 0);
+    const newTotal = existingDateTotal + amt;
+    const targetIncome = dailySalaries[targetDate] !== undefined ? dailySalaries[targetDate] : (parseFloat(defaultDailyIncome) || 700);
+
+    if (newTotal > targetIncome) {
+      showToast(`⚠️ Expense logged! Note: You are over budget by ${formatPeso(newTotal - targetIncome)} on ${targetDate}.`, 'warning', 4000);
+    } else {
+      showToast(`✅ Logged ${formatPeso(amt)} for "${trimmedName}"`, 'success');
+    }
   };
 
   // Delete Single Expense
   const handleDelete = (id) => {
+    const targetItem = expenses.find(exp => exp.id === id);
     const updated = expenses.filter(exp => exp.id !== id);
     setExpenses(updated);
     saveData(dailySalaries, updated, isDark);
+    if (targetItem) {
+      showToast(`Removed "${targetItem.name}" (-${formatPeso(targetItem.amount)})`, 'success');
+    }
   };
 
   // Open Edit Modal
@@ -435,7 +542,15 @@ export default function App() {
   // Save Edit Modal
   const handleSaveEdit = () => {
     const amt = parseFloat(editAmount);
-    if (!editName.trim() || isNaN(amt) || amt <= 0 || !editItem) return;
+    if (!editName.trim()) {
+      showToast('Description cannot be empty', 'error');
+      return;
+    }
+    if (isNaN(amt) || amt <= 0) {
+      showToast('Amount must be greater than ₱0', 'error');
+      return;
+    }
+    if (!editItem) return;
 
     const updated = expenses.map(exp => {
       if (exp.id === editItem.id) {
@@ -452,23 +567,31 @@ export default function App() {
     setExpenses(updated);
     saveData(dailySalaries, updated, isDark);
     setEditItem(null);
+    showToast('Record updated successfully', 'success');
   };
 
-  // Clear Expenses ONLY for currently selected date
+  // Clear Expenses ONLY for currently selected date with safety confirmation
   const handleClearSelectedDateExpenses = () => {
     const targetDateExpenses = expenses.filter(exp => exp.date === selectedDate);
-    if (targetDateExpenses.length === 0) return;
+    if (targetDateExpenses.length === 0) {
+      showToast(`No expenses to clear for ${selectedDate}`, 'warning');
+      return;
+    }
     
     if (confirm(`Delete all ${targetDateExpenses.length} expense(s) logged for ${selectedDate}?`)) {
       const updated = expenses.filter(exp => exp.date !== selectedDate);
       setExpenses(updated);
       saveData(dailySalaries, updated, isDark);
+      showToast(`Cleared ${targetDateExpenses.length} expenses for ${selectedDate}`, 'success');
     }
   };
 
   // Export CSV
   const handleExportCSV = () => {
-    if (expenses.length === 0) return;
+    if (expenses.length === 0) {
+      showToast('No expenses recorded to export', 'warning');
+      return;
+    }
     let csv = "Date,Expense Description,Amount (PHP)\n";
     expenses.forEach(exp => {
       csv += `"${exp.date || ''}","${exp.name.replace(/"/g, '""')}",${exp.amount}\n`;
@@ -483,6 +606,7 @@ export default function App() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    showToast('CSV export downloaded successfully', 'success');
   };
 
   // Toggle Theme
@@ -500,6 +624,9 @@ export default function App() {
   const remainingForDate = currentDateSalary - totalDateExpenses;
   const spentPctForDate = currentDateSalary > 0 ? Math.min(Math.round((totalDateExpenses / currentDateSalary) * 100), 999) : 0;
 
+  const isOverBudget = remainingForDate < 0;
+  const isCautionBudget = spentPctForDate >= 85 && !isOverBudget;
+
   const theme = isDark ? darkTheme : lightTheme;
   const dateInputClassName = isDark ? "modern-date-input" : "modern-date-input light-theme-picker";
   const iconColor = isDark ? "#f8fafc" : "#0f172a";
@@ -514,6 +641,18 @@ export default function App() {
   return (
     <SafeAreaView style={[styles.container, theme.container]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+
+      {/* Floating Animated Toast Alert */}
+      {toast && (
+        <View style={[
+          styles.toastPopup,
+          toast.type === 'error' ? styles.toastError :
+          toast.type === 'warning' ? styles.toastWarning : styles.toastSuccess
+        ]}>
+          <Text style={styles.toastText}>{toast.message}</Text>
+        </View>
+      )}
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
         {/* Minimalist FinTech Top Navigation Bar */}
@@ -528,7 +667,7 @@ export default function App() {
                 <Text style={[styles.mainTitleAccent]}>Pro</Text>
               </View>
               <Text style={[styles.mainSubtitle, theme.subtext]}>
-                {formatPeso(parseFloat(monthlySalary) || 21000)} /mo Net
+                {formatPeso(parseFloat(monthlySalary) || 21000)} /mo Net Salary
               </Text>
             </View>
           </View>
@@ -603,6 +742,34 @@ export default function App() {
                   </TouchableOpacity>
                 </View>
 
+                {/* 1-TAP CUT-OFF PRESETS */}
+                <View style={styles.presetSection}>
+                  <Text style={[styles.inputLabel, theme.subtext]}>⚡ 1-Tap Cut-off Presets:</Text>
+                  <View style={styles.presetPillsRow}>
+                    <TouchableOpacity
+                      style={[styles.presetPill, theme.inputBg]}
+                      onPress={() => applyCutoffPreset('CUTOFF_2')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.presetPillText, theme.text]}>2nd Cut-off (26-10)</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.presetPill, theme.inputBg]}
+                      onPress={() => applyCutoffPreset('CUTOFF_1')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.presetPillText, theme.text]}>1st Cut-off (11-25)</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.presetPill, theme.inputBg]}
+                      onPress={() => applyCutoffPreset('FULL_MONTH')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.presetPillText, theme.text]}>Full Month</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
                 {/* Monthly Salary Input */}
                 <View style={styles.inputGroup}>
                   <Text style={[styles.inputLabel, theme.subtext]}>Monthly Net Salary (₱)</Text>
@@ -649,40 +816,52 @@ export default function App() {
                   </View>
                 </View>
 
+                {/* Date Restriction Warning */}
+                {isDateRangeInvalid && (
+                  <View style={styles.dangerAlertBox}>
+                    <AlertTriangleIcon size={16} color="#f43f5e" />
+                    <Text style={styles.dangerAlertText}>
+                      Invalid Date Range: End Date must be after or equal to Start Date.
+                    </Text>
+                  </View>
+                )}
+
                 {/* FinTech Salary Result Banner */}
-                <View style={[styles.salaryHeroBanner, theme.heroSalaryBg]}>
-                  <View style={styles.heroBannerHeader}>
-                    <Text style={styles.heroTag}>AUTO-CALCULATED CUT-OFF PAY</Text>
-                    <View style={styles.workdaysPill}>
-                      <Text style={styles.workdaysPillText}>
-                        {totalAttendedDays}/{totalScheduledDays} Days
+                {!isDateRangeInvalid && (
+                  <View style={[styles.salaryHeroBanner, theme.heroSalaryBg]}>
+                    <View style={styles.heroBannerHeader}>
+                      <Text style={styles.heroTag}>AUTO-CALCULATED CUT-OFF PAY</Text>
+                      <View style={styles.workdaysPill}>
+                        <Text style={styles.workdaysPillText}>
+                          {totalAttendedDays}/{totalScheduledDays} Days
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text className="fintech-mono" style={styles.heroSalaryValue}>
+                      {formatPeso(calculatedCutoffSalary)}
+                    </Text>
+
+                    <View style={styles.salaryBreakdownStrip}>
+                      <Text style={styles.breakdownMuted}>
+                        Gross: {formatPeso(grossCutoffSalary)}
                       </Text>
+                      {totalTardyMinutes > 0 ? (
+                        <Text style={styles.breakdownTardy}>
+                          • Tardy: -{formatPeso(totalTardyDeduction)} ({totalTardyMinutes}m)
+                        </Text>
+                      ) : (
+                        <Text style={styles.breakdownMuted}>
+                          • Base: {formatPeso(userMonthly / 2)}
+                        </Text>
+                      )}
                     </View>
                   </View>
-
-                  <Text className="fintech-mono" style={styles.heroSalaryValue}>
-                    {formatPeso(calculatedCutoffSalary)}
-                  </Text>
-
-                  <View style={styles.salaryBreakdownStrip}>
-                    <Text style={styles.breakdownMuted}>
-                      Gross: {formatPeso(grossCutoffSalary)}
-                    </Text>
-                    {totalTardyMinutes > 0 ? (
-                      <Text style={styles.breakdownTardy}>
-                        • Tardy: -{formatPeso(totalTardyDeduction)} ({totalTardyMinutes}m)
-                      </Text>
-                    ) : (
-                      <Text style={styles.breakdownMuted}>
-                        • Base: {formatPeso(userMonthly / 2)}
-                      </Text>
-                    )}
-                  </View>
-                </View>
+                )}
               </View>
             )}
 
-            {/* ADD EXPENSE FORM */}
+            {/* ADD EXPENSE FORM WITH CATEGORIES & QUICK AMOUNT CHIPS */}
             {showExpenseForm && (
               <View style={[styles.fintechCard, theme.card]}>
                 <View style={styles.cardHeaderFlex}>
@@ -692,8 +871,26 @@ export default function App() {
                   </View>
                 </View>
 
+                {/* Quick Category Selector */}
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, theme.subtext]}>Date</Text>
+                  <Text style={[styles.inputLabel, theme.subtext]}>Quick Categories:</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+                    {EXPENSE_CATEGORIES.map(cat => (
+                      <TouchableOpacity
+                        key={cat.id}
+                        style={[styles.categoryChip, theme.inputBg]}
+                        onPress={() => handleSelectCategory(cat)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={{ fontSize: 13, marginRight: 4 }}>{cat.icon}</Text>
+                        <Text style={[styles.categoryChipText, theme.text]}>{cat.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, theme.subtext]}>Expense Date</Text>
                   <input
                     type="date"
                     className={dateInputClassName}
@@ -706,15 +903,30 @@ export default function App() {
                   <Text style={[styles.inputLabel, theme.subtext]}>Expense Description</Text>
                   <TextInput
                     style={[styles.fintechTextInput, theme.inputBg, theme.text]}
-                    placeholder="e.g. Groceries, Meal, Internet..."
+                    placeholder="e.g. Groceries, Lunch, Internet Bill..."
                     placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                     value={name}
                     onChangeText={setName}
                   />
                 </View>
 
+                {/* Amount with Quick Chips */}
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, theme.subtext]}>Amount (₱)</Text>
+                  <View style={styles.amountHeaderRow}>
+                    <Text style={[styles.inputLabel, theme.subtext]}>Amount (₱)</Text>
+                    <View style={styles.chipsRow}>
+                      {AMOUNT_CHIPS.map(chip => (
+                        <TouchableOpacity
+                          key={chip}
+                          style={[styles.amountChip, theme.inputBg]}
+                          onPress={() => handleAddAmountChip(chip)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.amountChipText}>+{chip}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
                   <TextInput
                     style={[styles.fintechTextInput, theme.inputBg, theme.text]}
                     placeholder="0.00"
@@ -736,7 +948,7 @@ export default function App() {
           {/* COLUMN 2 */}
           <div className="responsive-col">
             
-            {/* FEATURE 2: DAILY BUDGET CALCULATOR */}
+            {/* FEATURE 2: DAILY BUDGET CALCULATOR WITH SMART OVERBUDGET WARNINGS */}
             {showDailyCard && (
               <View style={[styles.fintechCard, theme.card]}>
                 <View style={styles.cardHeaderFlex}>
@@ -785,17 +997,36 @@ export default function App() {
                   </TouchableOpacity>
                 )}
 
+                {/* Overspending Banner Alert */}
+                {isOverBudget && (
+                  <View style={styles.dangerAlertBox}>
+                    <AlertTriangleIcon size={16} color="#f43f5e" />
+                    <Text style={styles.dangerAlertText}>
+                      Over Budget! Exceeded by {formatPeso(Math.abs(remainingForDate))} on {selectedDate}.
+                    </Text>
+                  </View>
+                )}
+
+                {isCautionBudget && (
+                  <View style={styles.warningAlertBox}>
+                    <AlertTriangleIcon size={16} color="#f59e0b" />
+                    <Text style={styles.warningAlertText}>
+                      Caution: You have spent {spentPctForDate}% of today's daily income limit.
+                    </Text>
+                  </View>
+                )}
+
                 {/* Hero Balance Card */}
                 <View style={[
                   styles.dailyBalanceHero,
-                  remainingForDate < 0 || spentPctForDate > 90 ? styles.heroDanger :
-                  spentPctForDate >= 75 ? styles.heroWarning : styles.heroHealthy
+                  isOverBudget ? styles.heroDanger :
+                  isCautionBudget ? styles.heroWarning : styles.heroHealthy
                 ]}>
                   <View style={styles.heroTopRow}>
                     <Text style={styles.heroBalanceLabel}>REMAINING BUDGET FOR {selectedDate}</Text>
                     <View style={styles.statusPill}>
                       <Text style={styles.statusPillText}>
-                        {remainingForDate < 0 || spentPctForDate > 90 ? 'Critical' : spentPctForDate >= 75 ? 'Caution' : 'Healthy'}
+                        {isOverBudget ? 'Over Budget' : isCautionBudget ? 'Caution' : 'Healthy'}
                       </Text>
                     </View>
                   </View>
@@ -821,7 +1052,7 @@ export default function App() {
                           if (val.trim() === '' || isNaN(parsed)) {
                             delete updatedSalaries[selectedDate];
                           } else {
-                            updatedSalaries[selectedDate] = parsed;
+                            updatedSalaries[selectedDate] = Math.max(0, parsed);
                           }
                           setDailySalaries(updatedSalaries);
                           saveData(updatedSalaries, expenses, isDark);
@@ -881,7 +1112,7 @@ export default function App() {
                   <View style={styles.emptyStateBox}>
                     <EmptyIcon size={32} color={mutedIconColor} style={{ marginBottom: 6 }} />
                     <Text style={[styles.emptyTitle, theme.text]}>No Expenses Logged</Text>
-                    <Text style={[styles.emptySubtitle, theme.subtext]}>Tap "+ Add Expense" above to record purchases.</Text>
+                    <Text style={[styles.emptySubtitle, theme.subtext]}>Tap "+ Add Expense" to record purchases.</Text>
                   </View>
                 ) : (
                   dateExpenses.map(item => (
@@ -957,8 +1188,17 @@ export default function App() {
                 </Text>
               </View>
 
+              {totalTardyMinutes > 0 && (
+                <View style={styles.warningAlertBox}>
+                  <ClockIcon size={15} color="#f59e0b" />
+                  <Text style={styles.warningAlertText}>
+                    Total Tardiness: {totalTardyMinutes} mins (-{formatPeso(totalTardyDeduction)} deducted from cut-off pay).
+                  </Text>
+                </View>
+              )}
+
               <Text style={[styles.inputLabel, theme.subtext]}>
-                Tap attendance badge to cycle status. Enter minutes late below:
+                Tap attendance badge to cycle status. Enter minutes late (max 480 mins):
               </Text>
 
               {/* Attendance & Tardy List */}
@@ -1019,7 +1259,7 @@ export default function App() {
                               if (val.trim() === '' || isNaN(num) || num <= 0) {
                                 delete newTardyMap[dateStr];
                               } else {
-                                newTardyMap[dateStr] = num;
+                                newTardyMap[dateStr] = Math.min(480, num); // Guardrail: Max 480 mins (8 hours)
                               }
                               setTardyMap(newTardyMap);
                               saveData(dailySalaries, expenses, isDark, attendanceMap, { tardyMap: newTardyMap });
@@ -1122,6 +1362,37 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
     gap: 16,
+  },
+
+  /* Floating Toast Alert */
+  toastPopup: {
+    position: 'absolute',
+    top: 16,
+    alignSelf: 'center',
+    zIndex: 9999,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    maxWidth: '90%',
+  },
+  toastSuccess: {
+    backgroundColor: '#059669',
+  },
+  toastWarning: {
+    backgroundColor: '#d97706',
+  },
+  toastError: {
+    backgroundColor: '#e11d48',
+  },
+  toastText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+    textAlign: 'center',
   },
 
   /* FinTech Brand Header */
@@ -1255,6 +1526,101 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 12,
     fontWeight: '800',
+  },
+
+  /* 1-Tap Presets */
+  presetSection: {
+    gap: 6,
+  },
+  presetPillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  presetPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  presetPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  /* Categories & Quick Chips */
+  categoryScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  categoryChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  amountHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  amountChip: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+  },
+  amountChipText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#10b981',
+  },
+
+  /* Alert Banners */
+  dangerAlertBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(244, 63, 94, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(244, 63, 94, 0.3)',
+    padding: 10,
+    borderRadius: 10,
+  },
+  dangerAlertText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#f43f5e',
+    flex: 1,
+  },
+  warningAlertBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+    padding: 10,
+    borderRadius: 10,
+  },
+  warningAlertText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#f59e0b',
+    flex: 1,
   },
 
   /* Inputs */
@@ -1754,7 +2120,7 @@ const styles = StyleSheet.create({
   }
 });
 
-// Curated Minimalist FinTech Palette (Linear / Stripe / Mercury style)
+// Curated Minimalist FinTech Palette
 const darkTheme = {
   container: { backgroundColor: '#090d16' },
   card: { backgroundColor: '#101726', borderColor: 'rgba(255, 255, 255, 0.08)' },
