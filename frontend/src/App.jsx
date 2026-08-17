@@ -148,20 +148,14 @@ const AlertTriangleIcon = (props) => (
   </SvgIcon>
 );
 
-const ZapIcon = (props) => (
-  <SvgIcon {...props}>
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </SvgIcon>
-);
-
 const EXPENSE_CATEGORIES = [
   { id: 'food', label: 'Food / Meals', icon: '🍔', prefix: 'Meal: ' },
-  { id: 'transport', label: 'Transport / Commute', icon: '🚗', prefix: 'Fare / Gas: ' },
-  { id: 'bills', label: 'Utilities / Bills', icon: '⚡', prefix: 'Bill: ' },
-  { id: 'groceries', label: 'Groceries / Market', icon: '🛒', prefix: 'Groceries: ' },
+  { id: 'transport', label: 'Transport', icon: '🚗', prefix: 'Fare / Gas: ' },
+  { id: 'bills', label: 'Bills', icon: '⚡', prefix: 'Bill: ' },
+  { id: 'groceries', label: 'Groceries', icon: '🛒', prefix: 'Groceries: ' },
   { id: 'snacks', label: 'Coffee / Snacks', icon: '☕', prefix: 'Coffee: ' },
-  { id: 'health', label: 'Health / Meds', icon: '💊', prefix: 'Medicine: ' },
-  { id: 'misc', label: 'Shopping / Misc', icon: '🛍️', prefix: 'Purchase: ' },
+  { id: 'health', label: 'Health', icon: '💊', prefix: 'Medicine: ' },
+  { id: 'misc', label: 'Shopping', icon: '🛍️', prefix: 'Purchase: ' },
 ];
 
 const AMOUNT_CHIPS = [50, 100, 200, 500, 1000];
@@ -218,7 +212,7 @@ export default function App() {
   // Active Tab for Segmented Control Navigation: 'ALL' | 'DAILY' | 'SALARY' | 'EXPENSES'
   const [activeTab, setActiveTab] = useState('ALL');
   
-  // Toast Alert State: { message: string, type: 'success' | 'warning' | 'error' }
+  // Toast Alert State
   const [toast, setToast] = useState(null);
   
   // Customizable Monthly Net Salary (Default ₱21,000)
@@ -239,6 +233,9 @@ export default function App() {
   const [cutoffBasePay, setCutoffBasePay] = useState('10500');
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   
+  // NEW: Floating Quick-Add Expense Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  
   // Map of Date -> Attendance Status ('FULL', 'SAT_FULL', 'HALF', 'ABSENT', 'REST_DAY')
   const [attendanceMap, setAttendanceMap] = useState({});
   
@@ -252,7 +249,7 @@ export default function App() {
   // Theme
   const [isDark, setIsDark] = useState(true);
 
-  // Edit Expense Modal
+  // Edit Expense Modal State
   const [editItem, setEditItem] = useState(null);
   const [editName, setEditName] = useState('');
   const [editAmount, setEditAmount] = useState('');
@@ -352,25 +349,22 @@ export default function App() {
   const applyCutoffPreset = (presetType) => {
     const today = new Date();
     const year = today.getFullYear();
-    const month = today.getMonth(); // 0-indexed
+    const month = today.getMonth();
 
     let start = '';
     let end = '';
 
     if (presetType === 'CUTOFF_1') {
-      // 1st Cut-off: 11th to 25th of current month
       start = `${year}-${String(month + 1).padStart(2, '0')}-11`;
       end = `${year}-${String(month + 1).padStart(2, '0')}-25`;
       showToast(`Set to 1st Cut-off: ${start} → ${end}`, 'success');
     } else if (presetType === 'CUTOFF_2') {
-      // 2nd Cut-off: 26th of previous/current month to 10th of current/next month
       const prevMonth = month === 0 ? 11 : month - 1;
       const prevYear = month === 0 ? year - 1 : year;
       start = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-26`;
       end = `${year}-${String(month + 1).padStart(2, '0')}-10`;
       showToast(`Set to 2nd Cut-off: ${start} → ${end}`, 'success');
     } else if (presetType === 'FULL_MONTH') {
-      // Full current month: 1st to last day
       const lastDay = new Date(year, month + 1, 0).getDate();
       start = `${year}-${String(month + 1).padStart(2, '0')}-01`;
       end = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
@@ -420,9 +414,7 @@ export default function App() {
   let totalTardyMinutes = 0;
 
   const userMonthly = Math.max(0, parseFloat(monthlySalary) || 21000);
-  // Standard daily rate for workdays based on 26 workdays per month
   const dailyWorkRate = userMonthly / 26;
-  // Per-minute rate: dailyWorkRate / 480 (8 hours * 60 mins)
   const minuteRate = dailyWorkRate / 480;
 
   rangeDates.forEach(d => {
@@ -476,19 +468,17 @@ export default function App() {
   };
 
   // Add Expense with Guardrails & Validation
-  const handleAddExpense = () => {
+  const handleAddExpense = (fromModal = false) => {
     const trimmedName = name.trim();
     const amt = parseFloat(amount);
 
-    // Restriction 1: Required Name
     if (!trimmedName) {
       showToast('Please enter an expense description!', 'error');
       return;
     }
 
-    // Restriction 2: Positive numeric amount
     if (isNaN(amt) || amt <= 0) {
-      showToast('Please enter a valid expense amount greater than ₱0!', 'error');
+      showToast('Please enter an amount greater than ₱0!', 'error');
       return;
     }
 
@@ -507,14 +497,14 @@ export default function App() {
 
     setName('');
     setAmount('');
+    if (fromModal) setShowAddModal(false);
 
-    // Check if added expense causes overspending on targetDate
     const existingDateTotal = expenses.filter(e => e.date === targetDate).reduce((s, i) => s + i.amount, 0);
     const newTotal = existingDateTotal + amt;
     const targetIncome = dailySalaries[targetDate] !== undefined ? dailySalaries[targetDate] : (parseFloat(defaultDailyIncome) || 700);
 
     if (newTotal > targetIncome) {
-      showToast(`⚠️ Expense logged! Note: You are over budget by ${formatPeso(newTotal - targetIncome)} on ${targetDate}.`, 'warning', 4000);
+      showToast(`⚠️ Logged! Over budget by ${formatPeso(newTotal - targetIncome)} on ${targetDate}.`, 'warning', 4000);
     } else {
       showToast(`✅ Logged ${formatPeso(amt)} for "${trimmedName}"`, 'success');
     }
@@ -652,6 +642,18 @@ export default function App() {
           <Text style={styles.toastText}>{toast.message}</Text>
         </View>
       )}
+
+      {/* FLOATING ACTION BUTTON (FAB) FOR INSTANT EXPENSE MODAL */}
+      <TouchableOpacity
+        style={styles.floatingActionBtn}
+        onPress={() => {
+          setExpenseDate(selectedDate);
+          setShowAddModal(true);
+        }}
+        activeOpacity={0.85}
+      >
+        <PlusIcon size={24} color="#ffffff" />
+      </TouchableOpacity>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
@@ -937,7 +939,7 @@ export default function App() {
                   />
                 </View>
 
-                <TouchableOpacity style={styles.primaryAddBtn} onPress={handleAddExpense} activeOpacity={0.85}>
+                <TouchableOpacity style={styles.primaryAddBtn} onPress={() => handleAddExpense(false)} activeOpacity={0.85}>
                   <Text style={styles.primaryAddBtnText}>+ Add Expense to {expenseDate}</Text>
                 </TouchableOpacity>
               </View>
@@ -1112,7 +1114,7 @@ export default function App() {
                   <View style={styles.emptyStateBox}>
                     <EmptyIcon size={32} color={mutedIconColor} style={{ marginBottom: 6 }} />
                     <Text style={[styles.emptyTitle, theme.text]}>No Expenses Logged</Text>
-                    <Text style={[styles.emptySubtitle, theme.subtext]}>Tap "+ Add Expense" to record purchases.</Text>
+                    <Text style={[styles.emptySubtitle, theme.subtext]}>Tap the floating "+" button to quickly log expenses.</Text>
                   </View>
                 ) : (
                   dateExpenses.map(item => (
@@ -1164,6 +1166,101 @@ export default function App() {
         </Text>
 
       </ScrollView>
+
+      {/* QUICK-ADD EXPENSE BOTTOM-SHEET MODAL (TRIGGERED BY FLOATING '+' BUTTON) */}
+      <Modal visible={showAddModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalBox, theme.card]}>
+            <View style={styles.modalDragHandle} />
+            <View style={styles.modalTopRow}>
+              <View style={styles.headerIconGroup}>
+                <PlusIcon size={18} color="#10b981" />
+                <Text style={[styles.modalHeading, theme.text]}>Quick Log Expense</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowAddModal(false)} activeOpacity={0.6}>
+                <Text style={[styles.modalCloseX, theme.subtext]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ gap: 12 }} showsVerticalScrollIndicator={false}>
+              {/* Quick Category Selector inside Modal */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, theme.subtext]}>Category:</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+                  {EXPENSE_CATEGORIES.map(cat => (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[styles.categoryChip, theme.inputBg]}
+                      onPress={() => handleSelectCategory(cat)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={{ fontSize: 13, marginRight: 4 }}>{cat.icon}</Text>
+                      <Text style={[styles.categoryChipText, theme.text]}>{cat.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, theme.subtext]}>Expense Date</Text>
+                <input
+                  type="date"
+                  className={dateInputClassName}
+                  value={expenseDate}
+                  onChange={(e) => setExpenseDate(e.target.value)}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, theme.subtext]}>Expense Description</Text>
+                <TextInput
+                  style={[styles.fintechTextInput, theme.inputBg, theme.text]}
+                  placeholder="e.g. Lunch with team, Fuel, Coffee..."
+                  placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                  value={name}
+                  onChangeText={setName}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <View style={styles.amountHeaderRow}>
+                  <Text style={[styles.inputLabel, theme.subtext]}>Amount (₱)</Text>
+                  <View style={styles.chipsRow}>
+                    {AMOUNT_CHIPS.map(chip => (
+                      <TouchableOpacity
+                        key={chip}
+                        style={[styles.amountChip, theme.inputBg]}
+                        onPress={() => handleAddAmountChip(chip)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.amountChipText}>+{chip}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+                <TextInput
+                  style={[styles.fintechTextInput, theme.inputBg, theme.text]}
+                  placeholder="0.00"
+                  placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                  keyboardType="numeric"
+                  value={amount}
+                  onChangeText={setAmount}
+                />
+              </View>
+
+              <View style={styles.modalActionsFlex}>
+                <TouchableOpacity style={[styles.cancelBtn, theme.btnBg]} onPress={() => setShowAddModal(false)} activeOpacity={0.7}>
+                  <Text style={theme.text}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.primaryAddBtn} onPress={() => handleAddExpense(true)} activeOpacity={0.85}>
+                  <CheckIcon size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                  <Text style={styles.primaryAddBtnText}>Save Expense</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Attendance & Tardiness Sheet Modal */}
       <Modal visible={showAttendanceModal} transparent animationType="slide">
@@ -1259,7 +1356,7 @@ export default function App() {
                               if (val.trim() === '' || isNaN(num) || num <= 0) {
                                 delete newTardyMap[dateStr];
                               } else {
-                                newTardyMap[dateStr] = Math.min(480, num); // Guardrail: Max 480 mins (8 hours)
+                                newTardyMap[dateStr] = Math.min(480, num);
                               }
                               setTardyMap(newTardyMap);
                               saveData(dailySalaries, expenses, isDark, attendanceMap, { tardyMap: newTardyMap });
@@ -1362,6 +1459,24 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
     gap: 16,
+  },
+
+  /* Floating Action Button (FAB) */
+  floatingActionBtn: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#10b981',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9990,
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
   },
 
   /* Floating Toast Alert */
@@ -1968,7 +2083,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  /* Attendance Modal */
+  /* Modals Overlay & Box */
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(9, 13, 22, 0.85)',
@@ -1988,6 +2103,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.2,
     shadowRadius: 16,
+    maxHeight: '90%',
   },
   modalDragHandle: {
     width: 40,
