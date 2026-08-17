@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
 import {
   View,
   Text,
@@ -7,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
-  Modal,
   StatusBar
 } from 'react-native';
 
@@ -167,7 +167,6 @@ const getTodayString = (d = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
-// Returns short day name (e.g. "Sat")
 const getDayNameStr = (dateStr) => {
   try {
     const [y, m, d] = dateStr.split('-').map(Number);
@@ -181,7 +180,6 @@ const getDayNameStr = (dateStr) => {
 const isSunday = (dateStr) => getDayNameStr(dateStr) === 'Sun';
 const isSaturday = (dateStr) => getDayNameStr(dateStr) === 'Sat';
 
-// Generate array of date strings between start and end date (inclusive)
 const getDateRangeArray = (startStr, endStr) => {
   const dates = [];
   try {
@@ -205,60 +203,39 @@ const getDateRangeArray = (startStr, endStr) => {
 };
 
 export default function App() {
-  // Map of Date -> Income Amount
   const [dailySalaries, setDailySalaries] = useState({});
   const [expenses, setExpenses] = useState([]);
-  
-  // Active Tab for Segmented Control Navigation: 'ALL' | 'DAILY' | 'SALARY' | 'EXPENSES'
   const [activeTab, setActiveTab] = useState('ALL');
-  
-  // Toast Alert State
   const [toast, setToast] = useState(null);
   
-  // Customizable Monthly Net Salary (Default ₱21,000)
   const [monthlySalary, setMonthlySalary] = useState('21000');
-  
-  // Customizable Default Daily Income for Daily Budget Calculator
   const [defaultDailyIncome, setDefaultDailyIncome] = useState('700');
-  
-  // Date Range Selection State for Cut-off Salary Calculator
   const [cutoffStart, setCutoffStart] = useState('2026-07-26');
   const [cutoffEnd, setCutoffEnd] = useState('2026-08-10');
   
-  // Selected Single Date within or outside range
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [expenseDate, setExpenseDate] = useState(getTodayString());
   
-  // Cut-off Base Pay setup
   const [cutoffBasePay, setCutoffBasePay] = useState('10500');
+  
+  // Radix UI Dialog States
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
-  
-  // Floating Quick-Add Expense Modal State
   const [showAddModal, setShowAddModal] = useState(false);
-  
-  // Custom Confirmation Modal State for CRUD operations
   const [confirmModal, setConfirmModal] = useState(null);
-  
-  // Map of Date -> Attendance Status ('FULL', 'SAT_FULL', 'HALF', 'ABSENT', 'REST_DAY')
+  const [editItem, setEditItem] = useState(null);
+
   const [attendanceMap, setAttendanceMap] = useState({});
-  
-  // Map of Date -> Tardy Minutes (e.g. { '2026-08-17': 23 })
   const [tardyMap, setTardyMap] = useState({});
   
-  // Form State
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   
-  // Theme
-  const [isDark, setIsDark] = useState(true);
-
-  // Edit Expense Modal State
-  const [editItem, setEditItem] = useState(null);
   const [editName, setEditName] = useState('');
   const [editAmount, setEditAmount] = useState('');
   const [editDate, setEditDate] = useState(getTodayString());
+  
+  const [isDark, setIsDark] = useState(true);
 
-  // Show Toast Helper
   const showToast = (message, type = 'success', duration = 3200) => {
     setToast({ message, type });
     setTimeout(() => {
@@ -266,7 +243,6 @@ export default function App() {
     }, duration);
   };
 
-  // Load Saved Data
   useEffect(() => {
     try {
       const saved = localStorage.getItem('rn_daily_budget_data');
@@ -298,7 +274,6 @@ export default function App() {
     }
   }, []);
 
-  // Save Data helper
   const saveData = (newDailySalaries, newExpenses, newIsDark, newAttMap = attendanceMap, extra = {}) => {
     try {
       localStorage.setItem('rn_daily_budget_data', JSON.stringify({
@@ -319,7 +294,6 @@ export default function App() {
     }
   };
 
-  // Handler to update Monthly Net Salary and auto-update Cut-off Base Pay
   const handleMonthlySalaryChange = (val) => {
     setMonthlySalary(val);
     const parsedMonthly = parseFloat(val);
@@ -328,7 +302,6 @@ export default function App() {
     saveData(dailySalaries, expenses, isDark, attendanceMap, { monthlySalary: val, cutoffBasePay: newCutoffBase });
   };
 
-  // Format Currency
   const formatPeso = (num) => {
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
@@ -338,7 +311,6 @@ export default function App() {
     }).format(num);
   };
 
-  // Date Navigation for single date filter
   const changeDateByDays = (days) => {
     const parts = selectedDate.split('-');
     const current = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
@@ -348,7 +320,6 @@ export default function App() {
     setExpenseDate(newStr);
   };
 
-  // Apply Quick Cut-off Presets
   const applyCutoffPreset = (presetType) => {
     const today = new Date();
     const year = today.getFullYear();
@@ -381,14 +352,12 @@ export default function App() {
     }
   };
 
-  // Quick Amount Chip Handler
   const handleAddAmountChip = (chipValue) => {
     const currentVal = parseFloat(amount) || 0;
     const nextVal = currentVal + chipValue;
     setAmount(nextVal.toString());
   };
 
-  // Quick Category Click Handler
   const handleSelectCategory = (cat) => {
     if (!name || name.trim() === '' || EXPENSE_CATEGORIES.some(c => name.startsWith(c.prefix))) {
       setName(cat.prefix);
@@ -397,7 +366,6 @@ export default function App() {
     }
   };
 
-  // Resolve attendance status for a date
   const getResolvedStatus = (dateStr) => {
     if (attendanceMap[dateStr]) return attendanceMap[dateStr];
     if (isSunday(dateStr)) return 'REST_DAY';
@@ -405,10 +373,7 @@ export default function App() {
     return 'FULL';
   };
 
-  // Date Range Restriction Check
   const isDateRangeInvalid = cutoffEnd < cutoffStart;
-
-  // --- DYNAMIC CUT-OFF SALARY & TARDINESS CALCULATIONS ---
   const rangeDates = !isDateRangeInvalid ? getDateRangeArray(cutoffStart, cutoffEnd) : [];
   
   let grossCutoffSalary = 0;
@@ -450,12 +415,10 @@ export default function App() {
   const netCalculatedCutoffSalary = Math.max(0, grossCutoffSalary - totalTardyDeduction);
   const calculatedCutoffSalary = Math.round(netCalculatedCutoffSalary * 100) / 100;
 
-  // Active daily income for selected date
   const currentDateSalary = dailySalaries[selectedDate] !== undefined 
     ? dailySalaries[selectedDate] 
     : (parseFloat(defaultDailyIncome) || 700);
 
-  // Toggle Attendance status when tapping a date row
   const toggleAttendanceStatus = (dateStr) => {
     const current = getResolvedStatus(dateStr);
     let nextStatus = 'FULL';
@@ -470,7 +433,6 @@ export default function App() {
     saveData(dailySalaries, expenses, isDark, newAttMap);
   };
 
-  // Add Expense with Guardrails & Validation
   const handleAddExpense = (fromModal = false) => {
     const trimmedName = name.trim();
     const amt = parseFloat(amount);
@@ -513,7 +475,6 @@ export default function App() {
     }
   };
 
-  // Prompt Confirmation before deleting single expense
   const promptDeleteExpense = (item) => {
     setConfirmModal({
       title: 'Delete Expense Record?',
@@ -529,7 +490,6 @@ export default function App() {
     });
   };
 
-  // Open Edit Modal
   const openEdit = (item) => {
     setEditItem(item);
     setEditName(item.name);
@@ -537,7 +497,6 @@ export default function App() {
     setEditDate(item.date || selectedDate);
   };
 
-  // Save Edit Modal
   const handleSaveEdit = () => {
     const amt = parseFloat(editAmount);
     if (!editName.trim()) {
@@ -568,7 +527,6 @@ export default function App() {
     showToast('Record updated successfully', 'success');
   };
 
-  // Prompt Confirmation before clearing single date's expenses
   const promptClearDateExpenses = () => {
     const targetDateExpenses = expenses.filter(exp => exp.date === selectedDate);
     if (targetDateExpenses.length === 0) {
@@ -590,7 +548,6 @@ export default function App() {
     });
   };
 
-  // Export CSV
   const handleExportCSV = () => {
     if (expenses.length === 0) {
       showToast('No expenses recorded to export', 'warning');
@@ -613,18 +570,15 @@ export default function App() {
     showToast('CSV export downloaded successfully', 'success');
   };
 
-  // Toggle Theme
   const toggleTheme = () => {
     const next = !isDark;
     setIsDark(next);
     saveData(dailySalaries, expenses, next);
   };
 
-  // Expenses filtering
   const dateExpenses = expenses.filter(exp => exp.date === selectedDate);
   const totalDateExpenses = dateExpenses.reduce((sum, item) => sum + item.amount, 0);
 
-  // Remaining Balance for Selected Single Date
   const remainingForDate = currentDateSalary - totalDateExpenses;
   const spentPctForDate = currentDateSalary > 0 ? Math.min(Math.round((totalDateExpenses / currentDateSalary) * 100), 999) : 0;
 
@@ -636,7 +590,6 @@ export default function App() {
   const iconColor = isDark ? "#f8fafc" : "#0f172a";
   const mutedIconColor = isDark ? "#94a3b8" : "#64748b";
 
-  // Tab Filtering Conditions
   const showSalaryCard = activeTab === 'ALL' || activeTab === 'SALARY';
   const showDailyCard = activeTab === 'ALL' || activeTab === 'DAILY';
   const showExpenseForm = activeTab === 'ALL' || activeTab === 'EXPENSES' || activeTab === 'DAILY';
@@ -657,7 +610,7 @@ export default function App() {
         </View>
       )}
 
-      {/* FLOATING ACTION BUTTON (FAB) FOR INSTANT EXPENSE MODAL */}
+      {/* FLOATING ACTION BUTTON (FAB) */}
       <TouchableOpacity
         style={styles.floatingActionBtn}
         onPress={() => {
@@ -877,7 +830,7 @@ export default function App() {
               </View>
             )}
 
-            {/* ADD EXPENSE FORM WITH CATEGORIES & QUICK AMOUNT CHIPS */}
+            {/* ADD EXPENSE FORM */}
             {showExpenseForm && (
               <View style={[styles.fintechCard, theme.card]}>
                 <View style={styles.cardHeaderFlex}>
@@ -964,7 +917,7 @@ export default function App() {
           {/* COLUMN 2 */}
           <div className="responsive-col">
             
-            {/* FEATURE 2: DAILY BUDGET CALCULATOR WITH SMART OVERBUDGET WARNINGS */}
+            {/* FEATURE 2: DAILY BUDGET CALCULATOR */}
             {showDailyCard && (
               <View style={[styles.fintechCard, theme.card]}>
                 <View style={styles.cardHeaderFlex}>
@@ -1181,105 +1134,113 @@ export default function App() {
 
       </ScrollView>
 
-      {/* QUICK-ADD EXPENSE BOTTOM-SHEET MODAL */}
-      <Modal visible={showAddModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalBox, theme.card]}>
-            <View style={styles.modalDragHandle} />
-            <View style={styles.modalTopRow}>
-              <View style={styles.headerIconGroup}>
+      {/* 1. RADIX UI DIALOG: QUICK-ADD EXPENSE MODAL */}
+      <Dialog.Root open={showAddModal} onOpenChange={setShowAddModal}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="radix-dialog-overlay" />
+          <Dialog.Content className={`radix-dialog-content ${!isDark ? 'light-mode-dialog' : ''}`}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <PlusIcon size={18} color="#10b981" />
-                <Text style={[styles.modalHeading, theme.text]}>Quick Log Expense</Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowAddModal(false)} activeOpacity={0.6}>
-                <Text style={[styles.modalCloseX, theme.subtext]}>✕</Text>
-              </TouchableOpacity>
+                <Dialog.Title style={{ fontSize: 16, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', margin: 0 }}>
+                  Quick Log Expense
+                </Dialog.Title>
+              </div>
+              <Dialog.Close asChild>
+                <button style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}>
+                  ✕
+                </button>
+              </Dialog.Close>
+            </div>
+            
+            <Dialog.Description style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#64748b', margin: 0 }}>
+              Record a purchase or payment to your daily budget.
+            </Dialog.Description>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, theme.subtext]}>Category:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+                {EXPENSE_CATEGORIES.map(cat => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[styles.categoryChip, theme.inputBg]}
+                    onPress={() => handleSelectCategory(cat)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ fontSize: 13, marginRight: 4 }}>{cat.icon}</Text>
+                    <Text style={[styles.categoryChipText, theme.text]}>{cat.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
 
-            <ScrollView contentContainerStyle={{ gap: 12 }} showsVerticalScrollIndicator={false}>
-              {/* Quick Category Selector inside Modal */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, theme.subtext]}>Category:</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
-                  {EXPENSE_CATEGORIES.map(cat => (
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, theme.subtext]}>Expense Date</Text>
+              <input
+                type="date"
+                className={dateInputClassName}
+                value={expenseDate}
+                onChange={(e) => setExpenseDate(e.target.value)}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, theme.subtext]}>Expense Description</Text>
+              <TextInput
+                style={[styles.fintechTextInput, theme.inputBg, theme.text]}
+                placeholder="e.g. Lunch with team, Fuel, Coffee..."
+                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                value={name}
+                onChangeText={setName}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <View style={styles.amountHeaderRow}>
+                <Text style={[styles.inputLabel, theme.subtext]}>Amount (₱)</Text>
+                <View style={styles.chipsRow}>
+                  {AMOUNT_CHIPS.map(chip => (
                     <TouchableOpacity
-                      key={cat.id}
-                      style={[styles.categoryChip, theme.inputBg]}
-                      onPress={() => handleSelectCategory(cat)}
+                      key={chip}
+                      style={[styles.amountChip, theme.inputBg]}
+                      onPress={() => handleAddAmountChip(chip)}
                       activeOpacity={0.7}
                     >
-                      <Text style={{ fontSize: 13, marginRight: 4 }}>{cat.icon}</Text>
-                      <Text style={[styles.categoryChipText, theme.text]}>{cat.label}</Text>
+                      <Text style={styles.amountChipText}>+{chip}</Text>
                     </TouchableOpacity>
                   ))}
-                </ScrollView>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, theme.subtext]}>Expense Date</Text>
-                <input
-                  type="date"
-                  className={dateInputClassName}
-                  value={expenseDate}
-                  onChange={(e) => setExpenseDate(e.target.value)}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, theme.subtext]}>Expense Description</Text>
-                <TextInput
-                  style={[styles.fintechTextInput, theme.inputBg, theme.text]}
-                  placeholder="e.g. Lunch with team, Fuel, Coffee..."
-                  placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-                  value={name}
-                  onChangeText={setName}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <View style={styles.amountHeaderRow}>
-                  <Text style={[styles.inputLabel, theme.subtext]}>Amount (₱)</Text>
-                  <View style={styles.chipsRow}>
-                    {AMOUNT_CHIPS.map(chip => (
-                      <TouchableOpacity
-                        key={chip}
-                        style={[styles.amountChip, theme.inputBg]}
-                        onPress={() => handleAddAmountChip(chip)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.amountChipText}>+{chip}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
                 </View>
-                <TextInput
-                  style={[styles.fintechTextInput, theme.inputBg, theme.text]}
-                  placeholder="0.00"
-                  placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-                  keyboardType="numeric"
-                  value={amount}
-                  onChangeText={setAmount}
-                />
               </View>
+              <TextInput
+                style={[styles.fintechTextInput, theme.inputBg, theme.text]}
+                placeholder="0.00"
+                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                keyboardType="numeric"
+                value={amount}
+                onChangeText={setAmount}
+              />
+            </View>
 
-              <View style={styles.modalActionsFlex}>
-                <TouchableOpacity style={[styles.cancelBtn, theme.btnBg]} onPress={() => setShowAddModal(false)} activeOpacity={0.7}>
+            <View style={styles.modalActionsFlex}>
+              <Dialog.Close asChild>
+                <TouchableOpacity style={[styles.cancelBtn, theme.btnBg]} activeOpacity={0.7}>
                   <Text style={theme.text}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.primaryAddBtn} onPress={() => handleAddExpense(true)} activeOpacity={0.85}>
-                  <CheckIcon size={16} color="#ffffff" style={{ marginRight: 6 }} />
-                  <Text style={styles.primaryAddBtnText}>Save Expense</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+              </Dialog.Close>
+              <TouchableOpacity style={styles.primaryAddBtn} onPress={() => handleAddExpense(true)} activeOpacity={0.85}>
+                <CheckIcon size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                <Text style={styles.primaryAddBtnText}>Save Expense</Text>
+              </TouchableOpacity>
+            </View>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
-      {/* CUSTOM STYLED CONFIRMATION MODAL FOR CRUD ACTIONS */}
-      <Modal visible={!!confirmModal} transparent animationType="fade">
-        <View style={styles.confirmModalOverlay}>
-          <View style={[styles.confirmModalBox, theme.card]}>
+      {/* 2. RADIX UI DIALOG: CONFIRMATION MODAL */}
+      <Dialog.Root open={!!confirmModal} onOpenChange={(open) => !open && setConfirmModal(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="radix-dialog-overlay" />
+          <Dialog.Content className={`radix-dialog-content radix-confirm-content ${!isDark ? 'light-mode-dialog' : ''}`}>
             <View style={[
               styles.confirmIconBubble,
               confirmModal?.isDanger ? styles.bubbleDanger : styles.bubblePrimary
@@ -1287,22 +1248,20 @@ export default function App() {
               <AlertTriangleIcon size={24} color={confirmModal?.isDanger ? '#f43f5e' : '#10b981'} />
             </View>
 
-            <Text style={[styles.confirmModalTitle, theme.text]}>
+            <Dialog.Title style={{ fontSize: 17, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', textAlign: 'center', margin: 0 }}>
               {confirmModal?.title || 'Confirm Action'}
-            </Text>
+            </Dialog.Title>
 
-            <Text style={[styles.confirmModalDesc, theme.subtext]}>
+            <Dialog.Description style={{ fontSize: 13, color: isDark ? '#94a3b8' : '#64748b', textAlign: 'center', lineHeight: '18px', margin: 0 }}>
               {confirmModal?.message || 'Are you sure you want to proceed?'}
-            </Text>
+            </Dialog.Description>
 
             <View style={styles.confirmModalBtnRow}>
-              <TouchableOpacity
-                style={[styles.confirmModalCancelBtn, theme.btnBg]}
-                onPress={() => setConfirmModal(null)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.confirmModalCancelText, theme.text]}>Cancel</Text>
-              </TouchableOpacity>
+              <Dialog.Close asChild>
+                <TouchableOpacity style={[styles.confirmModalCancelBtn, theme.btnBg]} activeOpacity={0.7}>
+                  <Text style={[styles.confirmModalCancelText, theme.text]}>Cancel</Text>
+                </TouchableOpacity>
+              </Dialog.Close>
               <TouchableOpacity
                 style={[
                   styles.confirmModalActionBtn,
@@ -1319,158 +1278,171 @@ export default function App() {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-      </Modal>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
-      {/* Attendance & Tardiness Sheet Modal */}
-      <Modal visible={showAttendanceModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalBox, theme.card]}>
-            <View style={styles.modalDragHandle} />
-            <View style={styles.modalTopRow}>
-              <View style={styles.headerIconGroup}>
+      {/* 3. RADIX UI DIALOG: ATTENDANCE & TARDINESS SHEET */}
+      <Dialog.Root open={showAttendanceModal} onOpenChange={setShowAttendanceModal}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="radix-dialog-overlay" />
+          <Dialog.Content className={`radix-dialog-content ${!isDark ? 'light-mode-dialog' : ''}`}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <CalendarIcon size={18} color="#10b981" />
-                <Text style={[styles.modalHeading, theme.text]}>Attendance & Tardiness Sheet</Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowAttendanceModal(false)} activeOpacity={0.6}>
-                <Text style={[styles.modalCloseX, theme.subtext]}>✕</Text>
-              </TouchableOpacity>
+                <Dialog.Title style={{ fontSize: 16, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', margin: 0 }}>
+                  Attendance & Tardiness Sheet
+                </Dialog.Title>
+              </div>
+              <Dialog.Close asChild>
+                <button style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}>
+                  ✕
+                </button>
+              </Dialog.Close>
+            </div>
+
+            <Dialog.Description style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#64748b', margin: 0 }}>
+              Adjust daily attendance and late minutes to auto-compute your net cut-off salary.
+            </Dialog.Description>
+
+            <View style={[styles.modalBanner, theme.inputBg]}>
+              <Text style={[styles.modalBannerText, theme.text]}>
+                Monthly Net: {formatPeso(parseFloat(monthlySalary) || 21000)} | Semi-Monthly Base: {formatPeso(userMonthly / 2)}{"\n"}
+                Daily Rate: {formatPeso(dailyWorkRate)} | Hourly: {formatPeso(dailyWorkRate / 8)} | Late: {formatPeso(minuteRate)}/min
+              </Text>
             </View>
 
-            <ScrollView contentContainerStyle={{ gap: 12 }} showsVerticalScrollIndicator={false}>
-              <View style={[styles.modalBanner, theme.inputBg]}>
-                <Text style={[styles.modalBannerText, theme.text]}>
-                  Monthly Net: {formatPeso(parseFloat(monthlySalary) || 21000)} | Semi-Monthly Base: {formatPeso(userMonthly / 2)}{"\n"}
-                  Daily Rate: {formatPeso(dailyWorkRate)} | Hourly: {formatPeso(dailyWorkRate / 8)} | Late: {formatPeso(minuteRate)}/min
+            {totalTardyMinutes > 0 && (
+              <View style={styles.warningAlertBox}>
+                <ClockIcon size={15} color="#f59e0b" />
+                <Text style={styles.warningAlertText}>
+                  Total Tardiness: {totalTardyMinutes} mins (-{formatPeso(totalTardyDeduction)} deducted from cut-off pay).
                 </Text>
               </View>
+            )}
 
-              {totalTardyMinutes > 0 && (
-                <View style={styles.warningAlertBox}>
-                  <ClockIcon size={15} color="#f59e0b" />
-                  <Text style={styles.warningAlertText}>
-                    Total Tardiness: {totalTardyMinutes} mins (-{formatPeso(totalTardyDeduction)} deducted from cut-off pay).
-                  </Text>
-                </View>
-              )}
+            <Text style={[styles.inputLabel, theme.subtext]}>
+              Tap attendance badge to cycle status. Enter minutes late (max 480 mins):
+            </Text>
 
-              <Text style={[styles.inputLabel, theme.subtext]}>
-                Tap attendance badge to cycle status. Enter minutes late (max 480 mins):
-              </Text>
+            <ScrollView style={{ maxHeight: 280 }} contentContainerStyle={{ gap: 8 }} showsVerticalScrollIndicator={true}>
+              {rangeDates.map(dateStr => {
+                const status = getResolvedStatus(dateStr);
+                const dayName = getDayNameStr(dateStr);
+                const isWorkingDay = status !== 'REST_DAY' && status !== 'ABSENT';
+                const dateTardyMins = tardyMap[dateStr] || 0;
+                const dateTardyDeduction = dateTardyMins * minuteRate;
 
-              {/* Attendance & Tardy List */}
-              <ScrollView style={{ maxHeight: 290 }} contentContainerStyle={{ gap: 8 }} showsVerticalScrollIndicator={true}>
-                {rangeDates.map(dateStr => {
-                  const status = getResolvedStatus(dateStr);
-                  const dayName = getDayNameStr(dateStr);
-                  const isWorkingDay = status !== 'REST_DAY' && status !== 'ABSENT';
-                  const dateTardyMins = tardyMap[dateStr] || 0;
-                  const dateTardyDeduction = dateTardyMins * minuteRate;
-
-                  return (
-                    <View key={dateStr} style={[styles.attendanceCardItem, theme.inputBg]}>
-                      <TouchableOpacity
-                        style={styles.attItemHeader}
-                        onPress={() => toggleAttendanceStatus(dateStr)}
-                        activeOpacity={0.8}
-                      >
-                        <View style={styles.attHeaderLeft}>
-                          <Text style={[styles.attItemDate, theme.text]}>
-                            {dateStr} ({dayName})
-                          </Text>
-                          {dateTardyMins > 0 && isWorkingDay && (
-                            <View style={styles.tardyBadgeAmber}>
-                              <ClockIcon size={10} color="#f59e0b" />
-                              <Text style={styles.tardyBadgeText}>{dateTardyMins}m late (-{formatPeso(dateTardyDeduction)})</Text>
-                            </View>
-                          )}
-                        </View>
-                        
-                        <View style={[
-                          styles.attStatusPill,
-                          status === 'FULL' || status === 'SAT_FULL' ? styles.statusPillFull :
-                          status === 'HALF' ? styles.statusPillHalf : styles.statusPillAbsent
-                        ]}>
-                          <Text style={styles.attStatusPillText}>
-                            {status === 'SAT_FULL' ? 'Sat (Full Pay)' :
-                             status === 'FULL' ? 'Full Day' :
-                             status === 'HALF' ? 'Half Day' :
-                             status === 'REST_DAY' ? 'Sunday Rest' : 'Absent'}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-
-                      {/* Tardy Input Row */}
-                      {isWorkingDay && (
-                        <View style={styles.tardyEditRow}>
-                          <View style={styles.tardyEditLeft}>
-                            <ClockIcon size={12} color={mutedIconColor} />
-                            <Text style={[styles.tardyFieldLabel, theme.subtext]}>Tardy Minutes:</Text>
+                return (
+                  <View key={dateStr} style={[styles.attendanceCardItem, theme.inputBg]}>
+                    <TouchableOpacity
+                      style={styles.attItemHeader}
+                      onPress={() => toggleAttendanceStatus(dateStr)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.attHeaderLeft}>
+                        <Text style={[styles.attItemDate, theme.text]}>
+                          {dateStr} ({dayName})
+                        </Text>
+                        {dateTardyMins > 0 && isWorkingDay && (
+                          <View style={styles.tardyBadgeAmber}>
+                            <ClockIcon size={10} color="#f59e0b" />
+                            <Text style={styles.tardyBadgeText}>{dateTardyMins}m late (-{formatPeso(dateTardyDeduction)})</Text>
                           </View>
-                          <TextInput
-                            style={[styles.tardyInputBox, theme.card, theme.text]}
-                            value={tardyMap[dateStr] !== undefined && tardyMap[dateStr] !== null ? tardyMap[dateStr].toString() : ''}
-                            onChangeText={(val) => {
-                              const num = parseInt(val, 10);
-                              const newTardyMap = { ...tardyMap };
-                              if (val.trim() === '' || isNaN(num) || num <= 0) {
-                                delete newTardyMap[dateStr];
-                              } else {
-                                newTardyMap[dateStr] = Math.min(480, num);
-                              }
-                              setTardyMap(newTardyMap);
-                              saveData(dailySalaries, expenses, isDark, attendanceMap, { tardyMap: newTardyMap });
-                            }}
-                            keyboardType="numeric"
-                            placeholder="0"
-                            placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-                          />
+                        )}
+                      </View>
+                      
+                      <View style={[
+                        styles.attStatusPill,
+                        status === 'FULL' || status === 'SAT_FULL' ? styles.statusPillFull :
+                        status === 'HALF' ? styles.statusPillHalf : styles.statusPillAbsent
+                      ]}>
+                        <Text style={styles.attStatusPillText}>
+                          {status === 'SAT_FULL' ? 'Sat (Full Pay)' :
+                           status === 'FULL' ? 'Full Day' :
+                           status === 'HALF' ? 'Half Day' :
+                           status === 'REST_DAY' ? 'Sunday Rest' : 'Absent'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    {isWorkingDay && (
+                      <View style={styles.tardyEditRow}>
+                        <View style={styles.tardyEditLeft}>
+                          <ClockIcon size={12} color={mutedIconColor} />
+                          <Text style={[styles.tardyFieldLabel, theme.subtext]}>Tardy Minutes:</Text>
                         </View>
-                      )}
-                    </View>
-                  );
-                })}
-              </ScrollView>
+                        <TextInput
+                          style={[styles.tardyInputBox, theme.card, theme.text]}
+                          value={tardyMap[dateStr] !== undefined && tardyMap[dateStr] !== null ? tardyMap[dateStr].toString() : ''}
+                          onChangeText={(val) => {
+                            const num = parseInt(val, 10);
+                            const newTardyMap = { ...tardyMap };
+                            if (val.trim() === '' || isNaN(num) || num <= 0) {
+                              delete newTardyMap[dateStr];
+                            } else {
+                              newTardyMap[dateStr] = Math.min(480, num);
+                            }
+                            setTardyMap(newTardyMap);
+                            saveData(dailySalaries, expenses, isDark, attendanceMap, { tardyMap: newTardyMap });
+                          }}
+                          keyboardType="numeric"
+                          placeholder="0"
+                          placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                        />
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
 
-              {/* Attendance Modal Summary Box */}
-              <View style={[styles.salaryHeroBanner, theme.heroSalaryBg]}>
-                <Text style={styles.heroTag}>NET CUT-OFF PAY AFTER DEDUCTIONS</Text>
-                <Text className="fintech-mono" style={styles.heroSalaryValue}>
-                  {formatPeso(calculatedCutoffSalary)}
+            <View style={[styles.salaryHeroBanner, theme.heroSalaryBg]}>
+              <Text style={styles.heroTag}>NET CUT-OFF PAY AFTER DEDUCTIONS</Text>
+              <Text className="fintech-mono" style={styles.heroSalaryValue}>
+                {formatPeso(calculatedCutoffSalary)}
+              </Text>
+              <View style={styles.salaryBreakdownStrip}>
+                <Text style={styles.breakdownMuted}>
+                  Gross: {formatPeso(grossCutoffSalary)}
                 </Text>
-                <View style={styles.salaryBreakdownStrip}>
-                  <Text style={styles.breakdownMuted}>
-                    Gross: {formatPeso(grossCutoffSalary)}
+                {totalTardyMinutes > 0 && (
+                  <Text style={styles.breakdownTardy}>
+                    • Tardy: -{formatPeso(totalTardyDeduction)} ({totalTardyMinutes}m @ {formatPeso(minuteRate)}/m)
                   </Text>
-                  {totalTardyMinutes > 0 && (
-                    <Text style={styles.breakdownTardy}>
-                      • Tardy: -{formatPeso(totalTardyDeduction)} ({totalTardyMinutes}m @ {formatPeso(minuteRate)}/m)
-                    </Text>
-                  )}
-                </View>
+                )}
               </View>
+            </View>
 
-              <TouchableOpacity style={styles.primaryAddBtn} onPress={() => setShowAttendanceModal(false)} activeOpacity={0.85}>
+            <Dialog.Close asChild>
+              <TouchableOpacity style={styles.primaryAddBtn} activeOpacity={0.85}>
                 <CheckIcon size={16} color="#ffffff" style={{ marginRight: 6 }} />
                 <Text style={styles.primaryAddBtnText}>Save & Close Sheet</Text>
               </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+            </Dialog.Close>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
-      {/* Edit Expense Modal */}
-      <Modal visible={!!editItem} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalBox, theme.card]}>
-            <View style={styles.modalDragHandle} />
-            <View style={styles.modalTopRow}>
-              <Text style={[styles.modalHeading, theme.text]}>Edit Expense Record</Text>
-              <TouchableOpacity onPress={() => setEditItem(null)} activeOpacity={0.6}>
-                <Text style={[styles.modalCloseX, theme.subtext]}>✕</Text>
-              </TouchableOpacity>
-            </View>
+      {/* 4. RADIX UI DIALOG: EDIT EXPENSE MODAL */}
+      <Dialog.Root open={!!editItem} onOpenChange={(open) => !open && setEditItem(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="radix-dialog-overlay" />
+          <Dialog.Content className={`radix-dialog-content ${!isDark ? 'light-mode-dialog' : ''}`}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Dialog.Title style={{ fontSize: 16, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', margin: 0 }}>
+                Edit Expense Record
+              </Dialog.Title>
+              <Dialog.Close asChild>
+                <button style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}>
+                  ✕
+                </button>
+              </Dialog.Close>
+            </div>
+
+            <Dialog.Description style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#64748b', margin: 0 }}>
+              Update description, amount, or date for this logged expense.
+            </Dialog.Description>
 
             <Text style={[styles.inputLabel, theme.subtext]}>Date</Text>
             <input
@@ -1496,16 +1468,19 @@ export default function App() {
             />
 
             <View style={styles.modalActionsFlex}>
-              <TouchableOpacity style={[styles.cancelBtn, theme.btnBg]} onPress={() => setEditItem(null)} activeOpacity={0.7}>
-                <Text style={theme.text}>Cancel</Text>
-              </TouchableOpacity>
+              <Dialog.Close asChild>
+                <TouchableOpacity style={[styles.cancelBtn, theme.btnBg]} activeOpacity={0.7}>
+                  <Text style={theme.text}>Cancel</Text>
+                </TouchableOpacity>
+              </Dialog.Close>
               <TouchableOpacity style={styles.primaryAddBtn} onPress={handleSaveEdit} activeOpacity={0.85}>
                 <Text style={styles.primaryAddBtnText}>Save Changes</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-      </Modal>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
     </SafeAreaView>
   );
 }
@@ -1533,7 +1508,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#10b981',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 9990,
+    zIndex: 9980,
     shadowColor: '#10b981',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
@@ -1572,26 +1547,6 @@ const styles = StyleSheet.create({
   },
 
   /* Custom Confirmation Modal Styles */
-  confirmModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(9, 13, 22, 0.85)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  confirmModalBox: {
-    width: '100%',
-    maxWidth: 420,
-    borderRadius: 20,
-    padding: 24,
-    alignItems: 'center',
-    gap: 12,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-  },
   confirmIconBubble: {
     width: 52,
     height: 52,
@@ -1599,6 +1554,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
+    alignSelf: 'center',
   },
   bubbleDanger: {
     backgroundColor: 'rgba(244, 63, 94, 0.15)',
@@ -1606,24 +1562,11 @@ const styles = StyleSheet.create({
   bubblePrimary: {
     backgroundColor: 'rgba(16, 185, 129, 0.15)',
   },
-  confirmModalTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    textAlign: 'center',
-    letterSpacing: -0.3,
-  },
-  confirmModalDesc: {
-    fontSize: 13,
-    fontWeight: '500',
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 6,
-  },
   confirmModalBtnRow: {
     flexDirection: 'row',
     gap: 10,
     width: '100%',
-    marginTop: 4,
+    marginTop: 8,
   },
   confirmModalCancelBtn: {
     flex: 1,
@@ -2234,49 +2177,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  /* Modals Overlay & Box */
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(9, 13, 22, 0.85)',
-    justifyContent: 'flex-end',
-  },
-  modalBox: {
-    width: '100%',
-    maxWidth: 600,
-    alignSelf: 'center',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    gap: 12,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    maxHeight: '90%',
-  },
-  modalDragHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#475569',
-    borderRadius: 99,
-    alignSelf: 'center',
-    marginBottom: 6,
-  },
-  modalTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  modalHeading: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  modalCloseX: {
-    fontSize: 18,
-    fontWeight: '800',
-  },
   modalBanner: {
     padding: 12,
     borderRadius: 10,

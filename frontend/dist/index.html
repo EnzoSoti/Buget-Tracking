@@ -153,8 +153,67 @@
         align-items: flex-start !important;
       }
     }
+
+    /* RADIX UI DIALOG STYLES & ANIMATIONS */
+    .radix-dialog-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(5px);
+      z-index: 9990;
+      animation: radixOverlayShow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .radix-dialog-content {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 92%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background-color: #101726;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 24px;
+      z-index: 9991;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      animation: radixContentShow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .radix-dialog-content.light-mode-dialog {
+      background-color: #ffffff;
+      border-color: #e2e8f0;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .radix-confirm-content {
+      max-width: 420px;
+      text-align: center;
+      align-items: center;
+    }
+
+    @keyframes radixOverlayShow {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes radixContentShow {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -48%) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
   </style>
-  <script type="module" crossorigin src="/assets/index-ChlQMoW8.js"></script>
+  <script type="module" crossorigin src="/assets/index-D9ltpGmo.js"></script>
 </head>
 <body>
   <div id="root"></div>
