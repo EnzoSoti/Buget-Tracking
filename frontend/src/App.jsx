@@ -67,6 +67,13 @@ const CalendarIcon = (props) => (
   </SvgIcon>
 );
 
+const ClockIcon = (props) => (
+  <SvgIcon {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </SvgIcon>
+);
+
 const SunIcon = (props) => (
   <SvgIcon {...props}>
     <circle cx="12" cy="12" r="5" />
@@ -203,6 +210,9 @@ export default function App() {
   // Map of Date -> Attendance Status ('FULL', 'SAT_FULL', 'HALF', 'ABSENT', 'REST_DAY')
   const [attendanceMap, setAttendanceMap] = useState({});
   
+  // Map of Date -> Tardy Minutes (e.g. { '2026-08-17': 23 })
+  const [tardyMap, setTardyMap] = useState({});
+  
   // Form State
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
@@ -234,6 +244,9 @@ export default function App() {
         if (parsed.attendanceMap) {
           setAttendanceMap(parsed.attendanceMap);
         }
+        if (parsed.tardyMap) {
+          setTardyMap(parsed.tardyMap);
+        }
         if (parsed.monthlySalary) setMonthlySalary(parsed.monthlySalary);
         if (parsed.defaultDailyIncome) setDefaultDailyIncome(parsed.defaultDailyIncome);
         if (parsed.cutoffBasePay) setCutoffBasePay(parsed.cutoffBasePay);
@@ -253,6 +266,7 @@ export default function App() {
         expenses: newExpenses,
         isDark: newIsDark,
         attendanceMap: newAttMap,
+        tardyMap,
         monthlySalary,
         defaultDailyIncome,
         cutoffBasePay,
@@ -302,16 +316,19 @@ export default function App() {
     return 'FULL';
   };
 
-  // --- DYNAMIC CUT-OFF SALARY CALCULATOR (SCALES DYNAMICALLY WITH DATE RANGE) ---
+  // --- DYNAMIC CUT-OFF SALARY & TARDINESS CALCULATIONS ---
   const rangeDates = getDateRangeArray(cutoffStart, cutoffEnd);
   
-  let calculatedCutoffSalary = 0;
+  let grossCutoffSalary = 0;
   let totalScheduledDays = 0;
   let totalAttendedDays = 0;
+  let totalTardyMinutes = 0;
 
   const userMonthly = parseFloat(monthlySalary) || 21000;
   // Standard daily rate for workdays based on 26 workdays per month
   const dailyWorkRate = userMonthly / 26;
+  // Per-minute rate: dailyWorkRate / (8 hours * 60 minutes) = dailyWorkRate / 480
+  const minuteRate = dailyWorkRate / 480;
 
   rangeDates.forEach(d => {
     const status = getResolvedStatus(d);
@@ -331,10 +348,18 @@ export default function App() {
       multiplier = 0.0;
     }
 
-    calculatedCutoffSalary += dailyWorkRate * multiplier;
+    grossCutoffSalary += dailyWorkRate * multiplier;
+
+    // Accumulate late minutes if the day is an attended workday
+    if (multiplier > 0 && tardyMap[d]) {
+      const mins = parseFloat(tardyMap[d]) || 0;
+      totalTardyMinutes += mins;
+    }
   });
 
-  calculatedCutoffSalary = Math.round(calculatedCutoffSalary * 100) / 100;
+  const totalTardyDeduction = totalTardyMinutes * minuteRate;
+  const netCalculatedCutoffSalary = Math.max(0, grossCutoffSalary - totalTardyDeduction);
+  const calculatedCutoffSalary = Math.round(netCalculatedCutoffSalary * 100) / 100;
 
   // --- INDEPENDENT DAILY BUDGET CALCULATOR FEATURE ---
   // Active daily income: completely customizable by the user per date, defaulting to defaultDailyIncome
@@ -478,7 +503,7 @@ export default function App() {
             <WalletIcon size={28} color="#3b82f6" />
             <View>
               <Text style={[styles.mainTitle, theme.text]}>Budget Tracker</Text>
-              <Text style={[styles.mainSubtitle, theme.subtext]}>Universal Salary & Expense Calculator</Text>
+              <Text style={[styles.mainSubtitle, theme.subtext]}>Salary, Attendance & Expense Manager</Text>
             </View>
           </View>
           <TouchableOpacity style={[styles.themePill, theme.card]} onPress={toggleTheme} activeOpacity={0.7}>
@@ -555,7 +580,9 @@ export default function App() {
                 <Text style={styles.calcSummaryLabel}>AUTO-CALCULATED CUT-OFF PAY</Text>
                 <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
                 <Text style={styles.calcSummarySub}>
-                  Base: {formatPeso(userMonthly / 2)} (₱{userMonthly}/mo) • {totalAttendedDays} of {totalScheduledDays} Work Days
+                  {totalTardyMinutes > 0
+                    ? `Gross: ${formatPeso(grossCutoffSalary)} • Tardy: -${formatPeso(totalTardyDeduction)} (${totalTardyMinutes}m) • Attended ${totalAttendedDays} of ${totalScheduledDays} Days`
+                    : `Base: ${formatPeso(userMonthly / 2)} (₱${userMonthly}/mo) • Attended ${totalAttendedDays} of ${totalScheduledDays} Work Days`}
                 </Text>
               </View>
             </View>
@@ -781,13 +808,16 @@ export default function App() {
 
       </ScrollView>
 
-      {/* Attendance & Salary Details Modal */}
+      {/* Attendance & Salary Details Modal with Tardy / Late Deductions */}
       <Modal visible={showAttendanceModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalBox, theme.card, { maxHeight: '85%' }]}>
+          <View style={[styles.modalBox, theme.card, { maxHeight: '90%' }]}>
             <View style={styles.modalDragHandle} />
             <View style={styles.modalTopRow}>
-              <Text style={[styles.modalHeading, theme.text]}>Cut-off Attendance Sheet</Text>
+              <View style={styles.headerTitleGroup}>
+                <CalendarIcon size={20} color="#3b82f6" />
+                <Text style={[styles.modalHeading, theme.text]}>Cut-off Attendance & Tardiness</Text>
+              </View>
               <TouchableOpacity onPress={() => setShowAttendanceModal(false)} activeOpacity={0.6}>
                 <Text style={[styles.modalCloseX, theme.subtext]}>✕</Text>
               </TouchableOpacity>
@@ -796,8 +826,8 @@ export default function App() {
             <ScrollView contentContainerStyle={{ gap: 14 }} showsVerticalScrollIndicator={false}>
               <View style={[styles.scheduleBanner, theme.btnBg]}>
                 <Text style={[styles.scheduleBannerText, theme.text]}>
-                  Semi-Monthly Cut-off Settings:{"\n"}
                   Monthly Net: {formatPeso(parseFloat(monthlySalary) || 21000)} | Semi-Monthly Base: {formatPeso(userMonthly / 2)}{"\n"}
+                  Daily Rate: {formatPeso(dailyWorkRate)} | Hourly: {formatPeso(dailyWorkRate / 8)} | Tardy Rate: {formatPeso(minuteRate)}/min{"\n"}
                   Saturdays = Halfday (Full Pay 1.0x) | Sundays = Rest Day (0x)
                 </Text>
               </View>
@@ -814,64 +844,100 @@ export default function App() {
                 />
               </View>
 
-              {/* Base Cut-off Pay Input */}
-              <View style={styles.formFieldGroup}>
-                <Text style={[styles.fieldTitle, theme.subtext]}>Semi-Monthly Cut-off Pay (₱)</Text>
-                <TextInput
-                  style={[styles.textInputFull, theme.btnBg, theme.text]}
-                  value={cutoffBasePay}
-                  onChangeText={(val) => {
-                    setCutoffBasePay(val);
-                    saveData(dailySalaries, expenses, isDark, attendanceMap, { cutoffBasePay: val });
-                  }}
-                  keyboardType="numeric"
-                  placeholder="10500"
-                />
-              </View>
-
               <Text style={[styles.fieldTitle, theme.subtext, { marginTop: 4 }]}>
-                Daily Cut-off attendance details (Tap row to toggle state)
+                Attendance & Late Minutes (Tap row to toggle attendance, enter mins late):
               </Text>
 
-              {/* Native ScrollView for attendance items */}
-              <ScrollView style={{ maxHeight: 280 }} contentContainerStyle={{ gap: 8 }} showsVerticalScrollIndicator={true}>
+              {/* Native ScrollView for attendance & tardy items */}
+              <ScrollView style={{ maxHeight: 290 }} contentContainerStyle={{ gap: 8 }} showsVerticalScrollIndicator={true}>
                 {rangeDates.map(dateStr => {
                   const status = getResolvedStatus(dateStr);
                   const dayName = getDayNameStr(dateStr);
+                  const isWorkingDay = status !== 'REST_DAY' && status !== 'ABSENT';
+                  const dateTardyMins = tardyMap[dateStr] || 0;
+                  const dateTardyDeduction = dateTardyMins * minuteRate;
 
                   return (
-                    <TouchableOpacity
-                      key={dateStr}
-                      style={[styles.attRow, theme.btnBg]}
-                      onPress={() => toggleAttendanceStatus(dateStr)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.attDateText, theme.text]}>
-                        {dateStr} ({dayName})
-                      </Text>
-                      
-                      <View style={[
-                        styles.attBadge,
-                        status === 'FULL' || status === 'SAT_FULL' ? styles.attFull :
-                        status === 'HALF' ? styles.attHalf : styles.attAbsent
-                      ]}>
-                        <Text style={styles.attBadgeText}>
-                          {status === 'SAT_FULL' ? 'Sat (Full Pay)' :
-                           status === 'FULL' ? 'Full Day' :
-                           status === 'HALF' ? 'Half Day' :
-                           status === 'REST_DAY' ? 'Sunday Rest' : 'Absent'}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
+                    <View key={dateStr} style={[styles.attRowContainer, theme.btnBg]}>
+                      <TouchableOpacity
+                        style={styles.attRowTop}
+                        onPress={() => toggleAttendanceStatus(dateStr)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={styles.attRowHeaderLeft}>
+                          <Text style={[styles.attDateText, theme.text]}>
+                            {dateStr} ({dayName})
+                          </Text>
+                          {dateTardyMins > 0 && isWorkingDay && (
+                            <View style={styles.tardyPillMini}>
+                              <ClockIcon size={11} color="#f59e0b" />
+                              <Text style={styles.tardyPillText}>{dateTardyMins}m late (-{formatPeso(dateTardyDeduction)})</Text>
+                            </View>
+                          )}
+                        </View>
+                        
+                        <View style={[
+                          styles.attBadge,
+                          status === 'FULL' || status === 'SAT_FULL' ? styles.attFull :
+                          status === 'HALF' ? styles.attHalf : styles.attAbsent
+                        ]}>
+                          <Text style={styles.attBadgeText}>
+                            {status === 'SAT_FULL' ? 'Sat (Full Pay)' :
+                             status === 'FULL' ? 'Full Day' :
+                             status === 'HALF' ? 'Half Day' :
+                             status === 'REST_DAY' ? 'Sunday Rest' : 'Absent'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+
+                      {/* Tardy Input (Shown on working days) */}
+                      {isWorkingDay && (
+                        <View style={styles.tardyInputRow}>
+                          <View style={styles.tardyLabelGroup}>
+                            <ClockIcon size={13} color={mutedIconColor} />
+                            <Text style={[styles.tardyInputLabel, theme.subtext]}>Tardy / Late (mins):</Text>
+                          </View>
+                          <TextInput
+                            style={[styles.tardyMinutesInput, theme.card, theme.text]}
+                            value={tardyMap[dateStr] !== undefined && tardyMap[dateStr] !== null ? tardyMap[dateStr].toString() : ''}
+                            onChangeText={(val) => {
+                              const num = parseInt(val, 10);
+                              const newTardyMap = { ...tardyMap };
+                              if (val.trim() === '' || isNaN(num) || num <= 0) {
+                                delete newTardyMap[dateStr];
+                              } else {
+                                newTardyMap[dateStr] = num;
+                              }
+                              setTardyMap(newTardyMap);
+                              saveData(dailySalaries, expenses, isDark, attendanceMap, { tardyMap: newTardyMap });
+                            }}
+                            keyboardType="numeric"
+                            placeholder="0"
+                            placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                          />
+                        </View>
+                      )}
+                    </View>
                   );
                 })}
               </ScrollView>
 
+              {/* Summary with Gross, Tardy Deductions, and Net Pay */}
               <View style={styles.calcSummaryBox}>
-                <Text style={styles.calcSummaryLabel}>NET CALCULATED CUT-OFF PAY</Text>
+                <Text style={styles.calcSummaryLabel}>NET AUTO-CALCULATED CUT-OFF PAY</Text>
                 <Text style={styles.calcSummaryVal}>{formatPeso(calculatedCutoffSalary)}</Text>
+                <View style={styles.summaryBreakdownRow}>
+                  <Text style={styles.summaryBreakdownText}>
+                    Gross: {formatPeso(grossCutoffSalary)}
+                  </Text>
+                  {totalTardyMinutes > 0 && (
+                    <Text style={styles.summaryBreakdownDanger}>
+                      • Tardy: -{formatPeso(totalTardyDeduction)} ({totalTardyMinutes}m @ {formatPeso(minuteRate)}/m)
+                    </Text>
+                  )}
+                </View>
                 <Text style={styles.calcSummarySub}>
-                  Attended: {totalAttendedDays} of {totalScheduledDays} Paid Work Days
+                  Attended: {totalAttendedDays} of {totalScheduledDays} Scheduled Work Days
                 </Text>
               </View>
 
@@ -1203,7 +1269,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 
-  /* Attendance styles */
+  /* Attendance & Tardy Styles */
   scheduleBanner: {
     padding: 12,
     borderRadius: 12,
@@ -1214,18 +1280,42 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 18,
   },
-  attRow: {
+  attRowContainer: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    gap: 10,
+  },
+  attRowTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
     gap: 8,
+  },
+  attRowHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    flex: 1,
   },
   attDateText: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  tardyPillMini: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  tardyPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#f59e0b',
   },
   attBadge: {
     paddingHorizontal: 10,
@@ -1239,6 +1329,33 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     color: '#ffffff',
+  },
+  tardyInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+    paddingTop: 8,
+  },
+  tardyLabelGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  tardyInputLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  tardyMinutesInput: {
+    width: 70,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '700',
+    outlineWidth: 0,
   },
   calcSummaryBox: {
     backgroundColor: '#059669',
@@ -1261,6 +1378,23 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '900',
     color: '#ffffff',
+  },
+  summaryBreakdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  summaryBreakdownText: {
+    fontSize: 12,
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  summaryBreakdownDanger: {
+    fontSize: 12,
+    color: '#fef08a',
+    fontWeight: '800',
   },
   calcSummarySub: {
     fontSize: 12,
