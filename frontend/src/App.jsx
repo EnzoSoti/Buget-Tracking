@@ -233,8 +233,11 @@ export default function App() {
   const [cutoffBasePay, setCutoffBasePay] = useState('10500');
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   
-  // NEW: Floating Quick-Add Expense Modal State
+  // Floating Quick-Add Expense Modal State
   const [showAddModal, setShowAddModal] = useState(false);
+  
+  // Custom Confirmation Modal State for CRUD operations
+  const [confirmModal, setConfirmModal] = useState(null);
   
   // Map of Date -> Attendance Status ('FULL', 'SAT_FULL', 'HALF', 'ABSENT', 'REST_DAY')
   const [attendanceMap, setAttendanceMap] = useState({});
@@ -510,15 +513,20 @@ export default function App() {
     }
   };
 
-  // Delete Single Expense
-  const handleDelete = (id) => {
-    const targetItem = expenses.find(exp => exp.id === id);
-    const updated = expenses.filter(exp => exp.id !== id);
-    setExpenses(updated);
-    saveData(dailySalaries, updated, isDark);
-    if (targetItem) {
-      showToast(`Removed "${targetItem.name}" (-${formatPeso(targetItem.amount)})`, 'success');
-    }
+  // Prompt Confirmation before deleting single expense
+  const promptDeleteExpense = (item) => {
+    setConfirmModal({
+      title: 'Delete Expense Record?',
+      message: `Are you sure you want to delete "${item.name}" (-${formatPeso(item.amount)}) from ${item.date}? This action cannot be undone.`,
+      confirmLabel: 'Delete Record',
+      isDanger: true,
+      onConfirm: () => {
+        const updated = expenses.filter(exp => exp.id !== item.id);
+        setExpenses(updated);
+        saveData(dailySalaries, updated, isDark);
+        showToast(`Deleted "${item.name}" (-${formatPeso(item.amount)})`, 'success');
+      }
+    });
   };
 
   // Open Edit Modal
@@ -560,20 +568,26 @@ export default function App() {
     showToast('Record updated successfully', 'success');
   };
 
-  // Clear Expenses ONLY for currently selected date with safety confirmation
-  const handleClearSelectedDateExpenses = () => {
+  // Prompt Confirmation before clearing single date's expenses
+  const promptClearDateExpenses = () => {
     const targetDateExpenses = expenses.filter(exp => exp.date === selectedDate);
     if (targetDateExpenses.length === 0) {
       showToast(`No expenses to clear for ${selectedDate}`, 'warning');
       return;
     }
-    
-    if (confirm(`Delete all ${targetDateExpenses.length} expense(s) logged for ${selectedDate}?`)) {
-      const updated = expenses.filter(exp => exp.date !== selectedDate);
-      setExpenses(updated);
-      saveData(dailySalaries, updated, isDark);
-      showToast(`Cleared ${targetDateExpenses.length} expenses for ${selectedDate}`, 'success');
-    }
+
+    setConfirmModal({
+      title: `Clear Expenses for ${selectedDate}?`,
+      message: `You are about to delete all ${targetDateExpenses.length} expense(s) logged on ${selectedDate} (Total: ${formatPeso(totalDateExpenses)}). All other dates will remain safe.`,
+      confirmLabel: `Clear ${targetDateExpenses.length} Expense(s)`,
+      isDanger: true,
+      onConfirm: () => {
+        const updated = expenses.filter(exp => exp.date !== selectedDate);
+        setExpenses(updated);
+        saveData(dailySalaries, updated, isDark);
+        showToast(`Cleared ${targetDateExpenses.length} expense(s) for ${selectedDate}`, 'success');
+      }
+    });
   };
 
   // Export CSV
@@ -1136,7 +1150,7 @@ export default function App() {
                         <TouchableOpacity onPress={() => openEdit(item)} style={[styles.iconBtnAction, theme.btnBg]} activeOpacity={0.6}>
                           <EditIcon size={13} color={iconColor} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleDelete(item.id)} style={[styles.iconBtnAction, theme.btnBg]} activeOpacity={0.6}>
+                        <TouchableOpacity onPress={() => promptDeleteExpense(item)} style={[styles.iconBtnAction, theme.btnBg]} activeOpacity={0.6}>
                           <TrashIcon size={13} color="#f43f5e" />
                         </TouchableOpacity>
                       </View>
@@ -1149,7 +1163,7 @@ export default function App() {
                     <DownloadIcon size={14} color="#ffffff" style={{ marginRight: 6 }} />
                     <Text style={styles.exportBtnText}>Export CSV</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.clearBtn} onPress={handleClearSelectedDateExpenses} activeOpacity={0.7}>
+                  <TouchableOpacity style={styles.clearBtn} onPress={promptClearDateExpenses} activeOpacity={0.7}>
                     <TrashIcon size={14} color="#f43f5e" style={{ marginRight: 6 }} />
                     <Text style={styles.clearBtnText}>Clear Date</Text>
                   </TouchableOpacity>
@@ -1167,7 +1181,7 @@ export default function App() {
 
       </ScrollView>
 
-      {/* QUICK-ADD EXPENSE BOTTOM-SHEET MODAL (TRIGGERED BY FLOATING '+' BUTTON) */}
+      {/* QUICK-ADD EXPENSE BOTTOM-SHEET MODAL */}
       <Modal visible={showAddModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalBox, theme.card]}>
@@ -1258,6 +1272,53 @@ export default function App() {
                 </TouchableOpacity>
               </View>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* CUSTOM STYLED CONFIRMATION MODAL FOR CRUD ACTIONS */}
+      <Modal visible={!!confirmModal} transparent animationType="fade">
+        <View style={styles.confirmModalOverlay}>
+          <View style={[styles.confirmModalBox, theme.card]}>
+            <View style={[
+              styles.confirmIconBubble,
+              confirmModal?.isDanger ? styles.bubbleDanger : styles.bubblePrimary
+            ]}>
+              <AlertTriangleIcon size={24} color={confirmModal?.isDanger ? '#f43f5e' : '#10b981'} />
+            </View>
+
+            <Text style={[styles.confirmModalTitle, theme.text]}>
+              {confirmModal?.title || 'Confirm Action'}
+            </Text>
+
+            <Text style={[styles.confirmModalDesc, theme.subtext]}>
+              {confirmModal?.message || 'Are you sure you want to proceed?'}
+            </Text>
+
+            <View style={styles.confirmModalBtnRow}>
+              <TouchableOpacity
+                style={[styles.confirmModalCancelBtn, theme.btnBg]}
+                onPress={() => setConfirmModal(null)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.confirmModalCancelText, theme.text]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.confirmModalActionBtn,
+                  confirmModal?.isDanger ? styles.confirmBtnDanger : styles.confirmBtnSuccess
+                ]}
+                onPress={() => {
+                  if (confirmModal?.onConfirm) confirmModal.onConfirm();
+                  setConfirmModal(null);
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.confirmModalActionText}>
+                  {confirmModal?.confirmLabel || 'Confirm'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1508,6 +1569,96 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     textAlign: 'center',
+  },
+
+  /* Custom Confirmation Modal Styles */
+  confirmModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(9, 13, 22, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  confirmModalBox: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+  },
+  confirmIconBubble: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  bubbleDanger: {
+    backgroundColor: 'rgba(244, 63, 94, 0.15)',
+  },
+  bubblePrimary: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  confirmModalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  confirmModalDesc: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  confirmModalBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+    marginTop: 4,
+  },
+  confirmModalCancelBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmModalCancelText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  confirmModalActionBtn: {
+    flex: 1.2,
+    height: 44,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+  },
+  confirmBtnDanger: {
+    backgroundColor: '#f43f5e',
+    shadowColor: '#f43f5e',
+  },
+  confirmBtnSuccess: {
+    backgroundColor: '#10b981',
+    shadowColor: '#10b981',
+  },
+  confirmModalActionText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
   },
 
   /* FinTech Brand Header */
