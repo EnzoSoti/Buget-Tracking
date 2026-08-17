@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Salary Budget Tracker</title>
+  <title>Budget & Salary Tracker | FinTech Pro</title>
 
   <!-- Auto-healing listener for stale Vite bundle hashes -->
   <script>
@@ -25,23 +25,25 @@
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 
   <!-- PWA Manifest & App Icons -->
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" type="image/jpeg" href="/app_logo.jpg" />
   <link rel="apple-touch-icon" href="/app_logo.jpg" />
-  <meta name="theme-color" content="#0f172a" />
-  <meta name="description" content="Smart daily salary and expense manager. Works 100% offline." />
+  <meta name="theme-color" content="#090d16" />
+  <meta name="description" content="Minimalist FinTech salary cut-off and daily budget tracker. Works 100% offline." />
 
   <style>
     :root {
       --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
     }
 
     * {
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
     }
 
     html, body, #root {
@@ -49,65 +51,65 @@
       height: 100%;
       margin: 0;
       padding: 0;
-      background-color: #0f172a;
+      background-color: #090d16;
       font-family: var(--font-sans);
       overflow-x: hidden;
       scroll-behavior: smooth;
     }
 
-    /* Sleek Custom Scrollbars */
+    /* Minimalist FinTech Scrollbars */
     ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
     }
     ::-webkit-scrollbar-track {
       background: transparent;
     }
     ::-webkit-scrollbar-thumb {
-      background: #334155;
+      background: #1e293b;
       border-radius: 99px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #475569;
+      background: #334155;
     }
 
-    /* Global Input & Date Picker Styles to prevent React Native Web processor conflicts */
+    /* Global Input & Date Picker Styles */
     input, textarea, select {
       outline: none !important;
       transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
     }
 
-    /* Modern Date Input Styling */
+    /* Modern FinTech Date Input Styling */
     .modern-date-input {
       font-family: var(--font-sans);
-      border-radius: 12px;
+      border-radius: 10px;
       padding: 10px 14px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
-      height: 48px;
+      height: 44px;
       box-sizing: border-box;
       cursor: pointer;
       width: 100%;
-      border: 1px solid #334155;
-      background-color: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background-color: #101726;
       color: #f8fafc;
     }
 
     /* Light Theme Overrides */
     .light-theme-picker {
       background-color: #ffffff !important;
-      color: #111827 !important;
-      border-color: #e5e7eb !important;
+      color: #0f172a !important;
+      border-color: #e2e8f0 !important;
     }
 
     .light-theme-picker:focus {
-      border-color: #3b82f6 !important;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+      border-color: #10b981 !important;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
     }
 
     .modern-date-input:focus {
-      border-color: #3b82f6 !important;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+      border-color: #10b981 !important;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
     }
 
     /* Style resets for native date pickers */
@@ -119,34 +121,40 @@
 
     /* Animated Progress Bar Fill */
     .progress-bar-animated {
-      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
 
-    /* Responsive Split Columns for Sideways Layout & Card Separation */
+    /* FinTech Monospace Currency Utility */
+    .fintech-mono {
+      font-family: var(--font-mono), monospace !important;
+      font-feature-settings: "tnum" on, "lnum" on !important;
+    }
+
+    /* Responsive Grid Layout */
     .responsive-row {
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 20px;
       width: 100%;
     }
 
     .responsive-col {
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 20px;
       flex: 1;
       width: 100%;
       min-width: 0;
     }
 
-    @media (min-width: 800px) {
+    @media (min-width: 860px) {
       .responsive-row {
         flex-direction: row !important;
         align-items: flex-start !important;
       }
     }
   </style>
-  <script type="module" crossorigin src="/assets/index-Cr60z-ad.js"></script>
+  <script type="module" crossorigin src="/assets/index-DYpX6hHp.js"></script>
 </head>
 <body>
   <div id="root"></div>
