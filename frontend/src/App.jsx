@@ -224,6 +224,7 @@ export default function App() {
   const [confirmModal, setConfirmModal] = useState(null);
   const [editItem, setEditItem] = useState(null);
 
+  // Map of Date -> Attendance Status ('FULL', 'SAT_FULL', 'HALF', 'SPECIAL_HOLIDAY', 'ABSENT', 'REST_DAY')
   const [attendanceMap, setAttendanceMap] = useState({});
   const [tardyMap, setTardyMap] = useState({});
   
@@ -399,7 +400,8 @@ export default function App() {
     } else if (status === 'HALF') {
       multiplier = 0.5;
       totalAttendedDays += 0.5;
-    } else if (status === 'ABSENT' || status === 'REST_DAY') {
+    } else if (status === 'SPECIAL_HOLIDAY' || status === 'ABSENT' || status === 'REST_DAY') {
+      // Special Non-Working Holiday (No Work, No Pay) = 0.0x multiplier
       multiplier = 0.0;
     }
 
@@ -419,12 +421,14 @@ export default function App() {
     ? dailySalaries[selectedDate] 
     : (parseFloat(defaultDailyIncome) || 700);
 
+  // Toggle Attendance status: FULL -> HALF -> SPECIAL_HOLIDAY (No Pay) -> ABSENT -> REST_DAY -> FULL
   const toggleAttendanceStatus = (dateStr) => {
     const current = getResolvedStatus(dateStr);
     let nextStatus = 'FULL';
     
     if (current === 'FULL' || current === 'SAT_FULL') nextStatus = 'HALF';
-    else if (current === 'HALF') nextStatus = 'ABSENT';
+    else if (current === 'HALF') nextStatus = 'SPECIAL_HOLIDAY';
+    else if (current === 'SPECIAL_HOLIDAY') nextStatus = 'ABSENT';
     else if (current === 'ABSENT') nextStatus = 'REST_DAY';
     else if (current === 'REST_DAY') nextStatus = 'FULL';
 
@@ -1282,7 +1286,7 @@ export default function App() {
         </Dialog.Portal>
       </Dialog.Root>
 
-      {/* 3. RADIX UI DIALOG: ATTENDANCE & TARDINESS SHEET */}
+      {/* 3. RADIX UI DIALOG: ATTENDANCE & TARDINESS SHEET WITH SPECIAL NON-WORKING HOLIDAY (NO PAY) */}
       <Dialog.Root open={showAttendanceModal} onOpenChange={setShowAttendanceModal}>
         <Dialog.Portal>
           <Dialog.Overlay className="radix-dialog-overlay" />
@@ -1302,7 +1306,7 @@ export default function App() {
             </div>
 
             <Dialog.Description style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#64748b', margin: 0 }}>
-              Adjust daily attendance and late minutes to auto-compute your net cut-off salary.
+              Tap attendance status to cycle: Full Day (1.0x) → Half Day (0.5x) → Special Holiday (No Pay 0x) → Absent (0x) → Sunday Rest.
             </Dialog.Description>
 
             <View style={[styles.modalBanner, theme.inputBg]}>
@@ -1322,14 +1326,14 @@ export default function App() {
             )}
 
             <Text style={[styles.inputLabel, theme.subtext]}>
-              Tap attendance badge to cycle status. Enter minutes late (max 480 mins):
+              Daily Cut-off Schedule (Tap badge to change status):
             </Text>
 
             <ScrollView style={{ maxHeight: 280 }} contentContainerStyle={{ gap: 8 }} showsVerticalScrollIndicator={true}>
               {rangeDates.map(dateStr => {
                 const status = getResolvedStatus(dateStr);
                 const dayName = getDayNameStr(dateStr);
-                const isWorkingDay = status !== 'REST_DAY' && status !== 'ABSENT';
+                const isWorkingDay = status !== 'REST_DAY' && status !== 'ABSENT' && status !== 'SPECIAL_HOLIDAY';
                 const dateTardyMins = tardyMap[dateStr] || 0;
                 const dateTardyDeduction = dateTardyMins * minuteRate;
 
@@ -1355,13 +1359,18 @@ export default function App() {
                       <View style={[
                         styles.attStatusPill,
                         status === 'FULL' || status === 'SAT_FULL' ? styles.statusPillFull :
-                        status === 'HALF' ? styles.statusPillHalf : styles.statusPillAbsent
+                        status === 'HALF' ? styles.statusPillHalf :
+                        status === 'SPECIAL_HOLIDAY' ? styles.statusPillHoliday : styles.statusPillAbsent
                       ]}>
-                        <Text style={styles.attStatusPillText}>
+                        <Text style={[
+                          styles.attStatusPillText,
+                          status === 'SPECIAL_HOLIDAY' && styles.statusHolidayText
+                        ]}>
                           {status === 'SAT_FULL' ? 'Sat (Full Pay)' :
-                           status === 'FULL' ? 'Full Day' :
-                           status === 'HALF' ? 'Half Day' :
-                           status === 'REST_DAY' ? 'Sunday Rest' : 'Absent'}
+                           status === 'FULL' ? 'Full Day (1.0x)' :
+                           status === 'HALF' ? 'Half Day (0.5x)' :
+                           status === 'SPECIAL_HOLIDAY' ? 'Special Holiday (0x)' :
+                           status === 'REST_DAY' ? 'Sunday Rest' : 'Absent (0x)'}
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -2233,11 +2242,15 @@ const styles = StyleSheet.create({
   },
   statusPillFull: { backgroundColor: 'rgba(16, 185, 129, 0.18)' },
   statusPillHalf: { backgroundColor: 'rgba(245, 158, 11, 0.18)' },
+  statusPillHoliday: { backgroundColor: 'rgba(168, 85, 247, 0.2)' },
   statusPillAbsent: { backgroundColor: 'rgba(244, 63, 94, 0.18)' },
   attStatusPillText: {
     fontSize: 11,
     fontWeight: '800',
     color: '#ffffff',
+  },
+  statusHolidayText: {
+    color: '#d8b4fe',
   },
   tardyEditRow: {
     flexDirection: 'row',
