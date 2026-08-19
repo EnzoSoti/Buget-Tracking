@@ -148,6 +148,40 @@ const AlertTriangleIcon = (props) => (
   </SvgIcon>
 );
 
+const CreditCardIcon = (props) => (
+  <SvgIcon {...props}>
+    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+    <line x1="1" y1="10" x2="23" y2="10" />
+  </SvgIcon>
+);
+
+const HistoryIcon = (props) => (
+  <SvgIcon {...props}>
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+    <path d="M3 3v5h5" />
+    <polyline points="12 7 12 12 15 15" />
+  </SvgIcon>
+);
+
+const CheckCircleIcon = (props) => (
+  <SvgIcon {...props}>
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </SvgIcon>
+);
+
+const ChevronDownIcon = (props) => (
+  <SvgIcon {...props}>
+    <polyline points="6 9 12 15 18 9" />
+  </SvgIcon>
+);
+
+const ChevronUpIcon = (props) => (
+  <SvgIcon {...props}>
+    <polyline points="18 15 12 9 6 15" />
+  </SvgIcon>
+);
+
 const EXPENSE_CATEGORIES = [
   { id: 'food', label: 'Food / Meals', icon: '🍔', prefix: 'Meal: ' },
   { id: 'transport', label: 'Transport', icon: '🚗', prefix: 'Fare / Gas: ' },
@@ -158,7 +192,18 @@ const EXPENSE_CATEGORIES = [
   { id: 'misc', label: 'Shopping', icon: '🛍️', prefix: 'Purchase: ' },
 ];
 
+const DEBT_CATEGORIES = [
+  { id: 'vehicle', label: 'Motorcycle / Vehicle', icon: '🏍️' },
+  { id: 'personal', label: 'Personal Loan', icon: '🤝' },
+  { id: 'gadget', label: 'Gadget / Appliance', icon: '📱' },
+  { id: 'credit', label: 'Credit Card', icon: '💳' },
+  { id: 'housing', label: 'Housing / Rent', icon: '🏠' },
+  { id: 'emergency', label: 'Emergency / Medical', icon: '🏥' },
+  { id: 'other', label: 'Other Debt', icon: '📝' },
+];
+
 const AMOUNT_CHIPS = [50, 100, 200, 500, 1000];
+const DEBT_PAYMENT_CHIPS = [500, 1000, 2000, 5000, 10000];
 
 const getTodayString = (d = new Date()) => {
   const year = d.getFullYear();
@@ -224,6 +269,29 @@ export default function App() {
   const [confirmModal, setConfirmModal] = useState(null);
   const [editItem, setEditItem] = useState(null);
 
+  // Debt & Loan Tracker States
+  const [debts, setDebts] = useState([]);
+  const [showAddDebtModal, setShowAddDebtModal] = useState(false);
+  const [editDebtItem, setEditDebtItem] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedDebtForPayment, setSelectedDebtForPayment] = useState(null);
+  const [expandedDebts, setExpandedDebts] = useState({});
+  const [debtFilter, setDebtFilter] = useState('ALL'); // 'ALL', 'ACTIVE', 'SETTLED'
+
+  // Add / Edit Debt Form Fields
+  const [debtTitle, setDebtTitle] = useState('');
+  const [debtAmount, setDebtAmount] = useState('');
+  const [debtCategory, setDebtCategory] = useState('vehicle');
+  const [debtDueDate, setDebtDueDate] = useState('');
+  const [debtMonthlyTarget, setDebtMonthlyTarget] = useState('');
+  const [debtNotes, setDebtNotes] = useState('');
+
+  // Payment Form Fields
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentDate, setPaymentDate] = useState(getTodayString());
+  const [paymentNote, setPaymentNote] = useState('');
+  const [syncWithExpenses, setSyncWithExpenses] = useState(true);
+
   // Map of Date -> Attendance Status ('FULL', 'SAT_FULL', 'HALF', 'SPECIAL_HOLIDAY', 'ABSENT', 'REST_DAY')
   const [attendanceMap, setAttendanceMap] = useState({});
   const [tardyMap, setTardyMap] = useState({});
@@ -254,6 +322,9 @@ export default function App() {
         }
         if (Array.isArray(parsed.expenses)) {
           setExpenses(parsed.expenses);
+        }
+        if (Array.isArray(parsed.debts)) {
+          setDebts(parsed.debts);
         }
         if (typeof parsed.isDark === 'boolean') {
           setIsDark(parsed.isDark);
@@ -288,11 +359,228 @@ export default function App() {
         cutoffBasePay,
         cutoffStart,
         cutoffEnd,
+        debts,
         ...extra
       }));
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const toggleExpandDebt = (id) => {
+    setExpandedDebts(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const handleOpenAddDebt = () => {
+    setDebtTitle('');
+    setDebtAmount('');
+    setDebtCategory('vehicle');
+    setDebtDueDate('');
+    setDebtMonthlyTarget('');
+    setDebtNotes('');
+    setShowAddDebtModal(true);
+  };
+
+  const handleCreateDebt = () => {
+    const trimmedTitle = debtTitle.trim();
+    const parsedAmount = parseFloat(debtAmount);
+
+    if (!trimmedTitle) {
+      showToast('Please enter a debt title or name!', 'error');
+      return;
+    }
+
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      showToast('Please enter a valid debt amount greater than ₱0!', 'error');
+      return;
+    }
+
+    const newDebt = {
+      id: 'debt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      title: trimmedTitle,
+      totalAmount: parsedAmount,
+      category: debtCategory || 'vehicle',
+      dueDate: debtDueDate || '',
+      monthlyTarget: parseFloat(debtMonthlyTarget) || 0,
+      notes: debtNotes.trim(),
+      createdAt: getTodayString(),
+      payments: []
+    };
+
+    const updated = [newDebt, ...debts];
+    setDebts(updated);
+    saveData(dailySalaries, expenses, isDark, attendanceMap, { debts: updated });
+    setShowAddDebtModal(false);
+    showToast(`✅ Added debt: "${trimmedTitle}" (${formatPeso(parsedAmount)})`, 'success');
+  };
+
+  const handleOpenEditDebt = (item) => {
+    setEditDebtItem(item);
+    setDebtTitle(item.title);
+    setDebtAmount(item.totalAmount.toString());
+    setDebtCategory(item.category || 'vehicle');
+    setDebtDueDate(item.dueDate || '');
+    setDebtMonthlyTarget(item.monthlyTarget ? item.monthlyTarget.toString() : '');
+    setDebtNotes(item.notes || '');
+  };
+
+  const handleSaveEditDebt = () => {
+    const trimmedTitle = debtTitle.trim();
+    const parsedAmount = parseFloat(debtAmount);
+
+    if (!trimmedTitle) {
+      showToast('Debt title cannot be empty!', 'error');
+      return;
+    }
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      showToast('Amount must be greater than ₱0!', 'error');
+      return;
+    }
+    if (!editDebtItem) return;
+
+    const updated = debts.map(d => {
+      if (d.id === editDebtItem.id) {
+        return {
+          ...d,
+          title: trimmedTitle,
+          totalAmount: parsedAmount,
+          category: debtCategory || 'vehicle',
+          dueDate: debtDueDate || '',
+          monthlyTarget: parseFloat(debtMonthlyTarget) || 0,
+          notes: debtNotes.trim()
+        };
+      }
+      return d;
+    });
+
+    setDebts(updated);
+    saveData(dailySalaries, expenses, isDark, attendanceMap, { debts: updated });
+    setEditDebtItem(null);
+    showToast('Debt details updated successfully', 'success');
+  };
+
+  const promptDeleteDebt = (item) => {
+    const paidSoFar = (item.payments || []).reduce((s, p) => s + p.amount, 0);
+    setConfirmModal({
+      title: `Delete Debt "${item.title}"?`,
+      message: `Are you sure you want to delete this debt (${formatPeso(item.totalAmount)}) with ${item.payments?.length || 0} payment history records totaling ${formatPeso(paidSoFar)}? This action cannot be undone.`,
+      confirmLabel: 'Delete Debt',
+      isDanger: true,
+      onConfirm: () => {
+        const updated = debts.filter(d => d.id !== item.id);
+        setDebts(updated);
+        saveData(dailySalaries, expenses, isDark, attendanceMap, { debts: updated });
+        showToast(`Deleted debt "${item.title}"`, 'success');
+      }
+    });
+  };
+
+  const handleOpenPaymentModal = (debt) => {
+    setSelectedDebtForPayment(debt);
+    setPaymentAmount(debt.monthlyTarget && debt.monthlyTarget > 0 ? debt.monthlyTarget.toString() : '');
+    setPaymentDate(getTodayString());
+    setPaymentNote(`Installment #${(debt.payments?.length || 0) + 1}`);
+    setSyncWithExpenses(true);
+    setShowPaymentModal(true);
+  };
+
+  const handleAddPaymentChip = (chipVal) => {
+    const cur = parseFloat(paymentAmount) || 0;
+    setPaymentAmount((cur + chipVal).toString());
+  };
+
+  const handleRecordPayment = () => {
+    if (!selectedDebtForPayment) return;
+    const amt = parseFloat(paymentAmount);
+
+    if (isNaN(amt) || amt <= 0) {
+      showToast('Please enter a valid installment amount!', 'error');
+      return;
+    }
+
+    const curPaid = (selectedDebtForPayment.payments || []).reduce((s, p) => s + p.amount, 0);
+    const remaining = Math.max(0, selectedDebtForPayment.totalAmount - curPaid);
+
+    const paymentItem = {
+      id: 'pay_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      debtId: selectedDebtForPayment.id,
+      amount: amt,
+      date: paymentDate || getTodayString(),
+      note: paymentNote.trim() || `Installment payment`
+    };
+
+    let updatedExpenses = [...expenses];
+    if (syncWithExpenses) {
+      const newExp = {
+        id: 'exp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+        name: `Loan/Debt Pay: ${selectedDebtForPayment.title}${paymentNote ? ` - ${paymentNote.trim()}` : ''}`,
+        amount: amt,
+        date: paymentDate || getTodayString(),
+        debtPaymentId: paymentItem.id
+      };
+      updatedExpenses = [newExp, ...expenses];
+      setExpenses(updatedExpenses);
+    }
+
+    const updatedDebts = debts.map(d => {
+      if (d.id === selectedDebtForPayment.id) {
+        const pList = [paymentItem, ...(d.payments || [])];
+        return { ...d, payments: pList };
+      }
+      return d;
+    });
+
+    setDebts(updatedDebts);
+    saveData(dailySalaries, updatedExpenses, isDark, attendanceMap, {
+      debts: updatedDebts,
+      expenses: updatedExpenses
+    });
+
+    setShowPaymentModal(false);
+    setSelectedDebtForPayment(null);
+
+    const newRemaining = Math.max(0, remaining - amt);
+    if (newRemaining <= 0) {
+      showToast(`🎉 Outstanding! "${selectedDebtForPayment.title}" is now FULLY PAID!`, 'success', 5000);
+    } else {
+      showToast(`✅ Recorded ${formatPeso(amt)} payment for "${selectedDebtForPayment.title}". Remaining: ${formatPeso(newRemaining)}`, 'success', 4000);
+    }
+  };
+
+  const promptDeletePayment = (debt, payment) => {
+    setConfirmModal({
+      title: 'Delete Installment Record?',
+      message: `Delete payment of ${formatPeso(payment.amount)} logged on ${payment.date}?`,
+      confirmLabel: 'Delete Payment',
+      isDanger: true,
+      onConfirm: () => {
+        // Also remove synced expense if exists
+        const updatedExpenses = expenses.filter(e => e.debtPaymentId !== payment.id);
+        if (updatedExpenses.length !== expenses.length) {
+          setExpenses(updatedExpenses);
+        }
+
+        const updatedDebts = debts.map(d => {
+          if (d.id === debt.id) {
+            return {
+              ...d,
+              payments: (d.payments || []).filter(p => p.id !== payment.id)
+            };
+          }
+          return d;
+        });
+
+        setDebts(updatedDebts);
+        saveData(dailySalaries, updatedExpenses, isDark, attendanceMap, {
+          debts: updatedDebts,
+          expenses: updatedExpenses
+        });
+        showToast(`Deleted installment payment of ${formatPeso(payment.amount)}`, 'success');
+      }
+    });
   };
 
   const handleMonthlySalaryChange = (val) => {
@@ -589,6 +877,30 @@ export default function App() {
   const isOverBudget = remainingForDate < 0;
   const isCautionBudget = spentPctForDate >= 85 && !isOverBudget;
 
+  // Debt & Loan Metrics Calculations
+  const totalDebtPrincipal = debts.reduce((sum, d) => sum + (d.totalAmount || 0), 0);
+  const totalDebtPaid = debts.reduce((sum, d) => {
+    const paidForDebt = (d.payments || []).reduce((pSum, p) => pSum + (p.amount || 0), 0);
+    return sum + paidForDebt;
+  }, 0);
+  const totalDebtRemaining = Math.max(0, totalDebtPrincipal - totalDebtPaid);
+  const overallPayoffPct = totalDebtPrincipal > 0 ? Math.min(100, Math.round((totalDebtPaid / totalDebtPrincipal) * 100)) : 0;
+  
+  const activeDebts = debts.filter(d => {
+    const paid = (d.payments || []).reduce((s, p) => s + p.amount, 0);
+    return paid < d.totalAmount;
+  });
+  const settledDebts = debts.filter(d => {
+    const paid = (d.payments || []).reduce((s, p) => s + p.amount, 0);
+    return paid >= d.totalAmount && d.totalAmount > 0;
+  });
+
+  const filteredDebts = debtFilter === 'ACTIVE' 
+    ? activeDebts 
+    : debtFilter === 'SETTLED' 
+    ? settledDebts 
+    : debts;
+
   const theme = isDark ? darkTheme : lightTheme;
   const dateInputClassName = isDark ? "modern-date-input" : "modern-date-input light-theme-picker";
   const iconColor = isDark ? "#f8fafc" : "#0f172a";
@@ -598,6 +910,8 @@ export default function App() {
   const showDailyCard = activeTab === 'ALL' || activeTab === 'DAILY';
   const showExpenseForm = activeTab === 'ALL' || activeTab === 'EXPENSES' || activeTab === 'DAILY';
   const showExpenseList = activeTab === 'ALL' || activeTab === 'EXPENSES' || activeTab === 'DAILY';
+  const showDebtsManager = activeTab === 'DEBTS';
+  const showDebtsOverview = activeTab === 'ALL';
 
   return (
     <SafeAreaView style={[styles.container, theme.container]}>
@@ -618,8 +932,12 @@ export default function App() {
       <TouchableOpacity
         style={styles.floatingActionBtn}
         onPress={() => {
-          setExpenseDate(selectedDate);
-          setShowAddModal(true);
+          if (activeTab === 'DEBTS') {
+            handleOpenAddDebt();
+          } else {
+            setExpenseDate(selectedDate);
+            setShowAddModal(true);
+          }
         }}
         activeOpacity={0.85}
       >
@@ -691,6 +1009,16 @@ export default function App() {
           >
             <Text style={[styles.segmentTabText, activeTab === 'EXPENSES' ? styles.segmentTabTextActive : theme.subtext]}>
               Expenses
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.segmentTab, activeTab === 'DEBTS' && styles.segmentTabActive]}
+            onPress={() => setActiveTab('DEBTS')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.segmentTabText, activeTab === 'DEBTS' ? styles.segmentTabTextActive : theme.subtext]}>
+              Debts & Loans{activeDebts.length > 0 ? ` (${activeDebts.length})` : ''}
             </Text>
           </TouchableOpacity>
         </View>
@@ -916,6 +1244,128 @@ export default function App() {
               </View>
             )}
 
+            {/* DEBTS & LOANS SUMMARY WIDGET (OVERVIEW TAB) */}
+            {showDebtsOverview && (
+              <View style={[styles.fintechCard, theme.card]}>
+                <View style={styles.cardHeaderFlex}>
+                  <View style={styles.headerIconGroup}>
+                    <CreditCardIcon size={17} color="#10b981" />
+                    <Text style={[styles.cardTitle, theme.text]}>Debts & Loans Tracker</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.attendanceBtn}
+                    onPress={() => setActiveTab('DEBTS')}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.attendanceBtnText}>Manage All →</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {debts.length === 0 ? (
+                  <View style={styles.emptyStateBox}>
+                    <CreditCardIcon size={30} color={mutedIconColor} style={{ marginBottom: 6 }} />
+                    <Text style={[styles.emptyTitle, theme.text]}>No Debts or Loans Logged</Text>
+                    <Text style={[styles.emptySubtitle, theme.subtext]}>
+                      Record loans (e.g. Motorcycle ₱80k), amortization, & fees.
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.primaryAddBtn, { marginTop: 12 }]}
+                      onPress={handleOpenAddDebt}
+                      activeOpacity={0.85}
+                    >
+                      <PlusIcon size={15} color="#ffffff" style={{ marginRight: 6 }} />
+                      <Text style={styles.primaryAddBtnText}>+ Record a Debt / Loan</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <>
+                    <View style={[styles.debtOverviewBanner, theme.inputBg]}>
+                      <View style={styles.debtOverviewTop}>
+                        <View>
+                          <Text style={[styles.inputLabel, theme.subtext]}>TOTAL OUTSTANDING DEBT</Text>
+                          <Text className="fintech-mono" style={[styles.debtTotalRemainingText, totalDebtRemaining > 0 ? styles.textDanger : styles.textSuccess]}>
+                            {formatPeso(totalDebtRemaining)}
+                          </Text>
+                        </View>
+                        <View style={styles.debtPayoffBadge}>
+                          <Text style={styles.debtPayoffBadgeText}>{overallPayoffPct}% Paid Off</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.progressBarTrack}>
+                        <div
+                          className="progress-bar-animated"
+                          style={{
+                            height: '100%',
+                            backgroundColor: '#10b981',
+                            borderRadius: 99,
+                            width: `${Math.min(overallPayoffPct, 100)}%`
+                          }}
+                        />
+                      </View>
+
+                      <View style={styles.debtOverviewFooter}>
+                        <Text style={[styles.breakdownMuted, theme.subtext]}>
+                          Repaid: {formatPeso(totalDebtPaid)} / {formatPeso(totalDebtPrincipal)}
+                        </Text>
+                        <Text style={[styles.breakdownMuted, theme.subtext]}>
+                          {activeDebts.length} active &bull; {settledDebts.length} settled
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Quick Mini List of Active Debts */}
+                    <View style={{ gap: 8 }}>
+                      {activeDebts.slice(0, 3).map(debt => {
+                        const paidAmt = (debt.payments || []).reduce((s, p) => s + p.amount, 0);
+                        const remAmt = Math.max(0, debt.totalAmount - paidAmt);
+                        const catObj = DEBT_CATEGORIES.find(c => c.id === debt.category) || DEBT_CATEGORIES[0];
+                        return (
+                          <View key={debt.id} style={[styles.debtMiniItemRow, theme.inputBg]}>
+                            <View style={styles.debtMiniLeft}>
+                              <Text style={{ fontSize: 16 }}>{catObj.icon}</Text>
+                              <View style={{ flex: 1 }}>
+                                <Text style={[styles.expName, theme.text]}>{debt.title}</Text>
+                                <Text style={[styles.expDate, theme.subtext]}>
+                                  Bal: {formatPeso(remAmt)} ({Math.round((paidAmt / debt.totalAmount) * 100)}% paid)
+                                </Text>
+                              </View>
+                            </View>
+                            <TouchableOpacity
+                              style={styles.debtMiniPayBtn}
+                              onPress={() => handleOpenPaymentModal(debt)}
+                              activeOpacity={0.8}
+                            >
+                              <PlusIcon size={12} color="#ffffff" style={{ marginRight: 4 }} />
+                              <Text style={styles.debtMiniPayBtnText}>Pay</Text>
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      })}
+                    </View>
+
+                    <View style={styles.cardActionsRow}>
+                      <TouchableOpacity
+                        style={styles.primaryAddBtn}
+                        onPress={handleOpenAddDebt}
+                        activeOpacity={0.85}
+                      >
+                        <PlusIcon size={14} color="#ffffff" style={{ marginRight: 6 }} />
+                        <Text style={styles.primaryAddBtnText}>+ Add Debt</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.cancelBtn, theme.btnBg, { flex: 1 }]}
+                        onPress={() => setActiveTab('DEBTS')}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[theme.text, { fontWeight: '700', fontSize: 13 }]}>Manage Debts →</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
+              </View>
+            )}
+
           </div>
 
           {/* COLUMN 2 */}
@@ -1132,6 +1582,337 @@ export default function App() {
 
         </div>
 
+        {/* FULL DEBT & LOAN MANAGER (DEBTS TAB) */}
+        {showDebtsManager && (
+          <View style={[styles.fintechCard, theme.card, { width: '100%' }]}>
+            <View style={styles.cardHeaderFlex}>
+              <View style={styles.headerIconGroup}>
+                <CreditCardIcon size={20} color="#10b981" />
+                <View>
+                  <Text style={[styles.cardTitle, theme.text, { fontSize: 17 }]}>Debt & Loan Manager</Text>
+                  <Text style={[styles.mainSubtitle, theme.subtext, { marginTop: 1 }]}>
+                    Track loans, amortization schedules & record installment payments
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.primaryAddBtn}
+                onPress={handleOpenAddDebt}
+                activeOpacity={0.85}
+              >
+                <PlusIcon size={15} color="#ffffff" style={{ marginRight: 6 }} />
+                <Text style={styles.primaryAddBtnText}>+ Add Debt / Loan</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Hero Balance & Overview Stats */}
+            <View style={[styles.debtManagerHeroBanner, theme.heroSalaryBg]}>
+              <View style={styles.heroBannerHeader}>
+                <Text style={styles.heroTag}>TOTAL OUTSTANDING DEBT BALANCE</Text>
+                <View style={[styles.workdaysPill, totalDebtRemaining === 0 && { backgroundColor: 'rgba(16, 185, 129, 0.2)' }]}>
+                  <Text style={styles.workdaysPillText}>
+                    {overallPayoffPct}% Repaid
+                  </Text>
+                </View>
+              </View>
+
+              <Text className="fintech-mono" style={[styles.heroSalaryValue, totalDebtRemaining > 0 ? { color: '#f43f5e' } : { color: '#10b981' }]}>
+                {formatPeso(totalDebtRemaining)}
+              </Text>
+
+              {/* Progress Bar */}
+              <View style={styles.progressSection}>
+                <View style={styles.progressLabelsRow}>
+                  <Text style={styles.progressSubLabel}>Overall Payoff Progress</Text>
+                  <Text className="fintech-mono" style={styles.progressPctLabel}>{overallPayoffPct}%</Text>
+                </View>
+                <View style={styles.progressBarTrack}>
+                  <div
+                    className="progress-bar-animated"
+                    style={{
+                      height: '100%',
+                      backgroundColor: '#10b981',
+                      borderRadius: 99,
+                      width: `${Math.min(overallPayoffPct, 100)}%`
+                    }}
+                  />
+                </View>
+              </View>
+
+              {/* 3 Metric Breakdown Boxes */}
+              <View style={styles.debtHeroMetricsRow}>
+                <View style={styles.miniMetricBox}>
+                  <Text style={styles.miniMetricLabel}>Total Borrowed</Text>
+                  <Text className="fintech-mono" style={styles.miniMetricValue}>
+                    {formatPeso(totalDebtPrincipal)}
+                  </Text>
+                </View>
+                <View style={styles.miniMetricBox}>
+                  <Text style={styles.miniMetricLabel}>Total Repaid</Text>
+                  <Text className="fintech-mono" style={[styles.miniMetricValue, { color: '#10b981' }]}>
+                    {formatPeso(totalDebtPaid)}
+                  </Text>
+                </View>
+                <View style={styles.miniMetricBox}>
+                  <Text style={styles.miniMetricLabel}>Active Accounts</Text>
+                  <Text className="fintech-mono" style={styles.miniMetricValue}>
+                    {activeDebts.length} Active / {debts.length} Total
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Filter Buttons */}
+            <View style={styles.debtFilterRow}>
+              <TouchableOpacity
+                style={[styles.presetPill, debtFilter === 'ALL' ? styles.debtFilterActive : theme.inputBg]}
+                onPress={() => setDebtFilter('ALL')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.presetPillText, debtFilter === 'ALL' ? styles.debtFilterActiveText : theme.text]}>
+                  All Debts ({debts.length})
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.presetPill, debtFilter === 'ACTIVE' ? styles.debtFilterActive : theme.inputBg]}
+                onPress={() => setDebtFilter('ACTIVE')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.presetPillText, debtFilter === 'ACTIVE' ? styles.debtFilterActiveText : theme.text]}>
+                  Active ({activeDebts.length})
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.presetPill, debtFilter === 'SETTLED' ? styles.debtFilterActive : theme.inputBg]}
+                onPress={() => setDebtFilter('SETTLED')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.presetPillText, debtFilter === 'SETTLED' ? styles.debtFilterActiveText : theme.text]}>
+                  Fully Paid ({settledDebts.length})
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Debts List */}
+            {filteredDebts.length === 0 ? (
+              <View style={[styles.emptyStateBox, { paddingVertical: 40 }]}>
+                <CreditCardIcon size={44} color={mutedIconColor} style={{ marginBottom: 10 }} />
+                <Text style={[styles.emptyTitle, theme.text, { fontSize: 16 }]}>
+                  {debts.length === 0 ? 'No Debts or Loans Recorded Yet' : 'No Debts Match the Selected Filter'}
+                </Text>
+                <Text style={[styles.emptySubtitle, theme.subtext, { maxWidth: 400, textAlign: 'center', marginTop: 4 }]}>
+                  {debts.length === 0
+                    ? 'Add a loan like a Motorcycle Loan (₱80,000) to start logging your installment payments and amortization.'
+                    : 'Switch filters or add a new debt to view records.'}
+                </Text>
+                {debts.length === 0 && (
+                  <TouchableOpacity
+                    style={[styles.primaryAddBtn, { marginTop: 16, paddingHorizontal: 20 }]}
+                    onPress={handleOpenAddDebt}
+                    activeOpacity={0.85}
+                  >
+                    <PlusIcon size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                    <Text style={styles.primaryAddBtnText}>+ Add First Debt / Loan</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <View style={{ gap: 14 }}>
+                {filteredDebts.map(debt => {
+                  const paidAmt = (debt.payments || []).reduce((s, p) => s + p.amount, 0);
+                  const remAmt = Math.max(0, debt.totalAmount - paidAmt);
+                  const pct = debt.totalAmount > 0 ? Math.min(100, Math.round((paidAmt / debt.totalAmount) * 100)) : 0;
+                  const isSettled = remAmt === 0 && debt.totalAmount > 0;
+                  const catObj = DEBT_CATEGORIES.find(c => c.id === debt.category) || DEBT_CATEGORIES[0];
+                  const isExpanded = !!expandedDebts[debt.id];
+
+                  return (
+                    <View key={debt.id} style={[styles.debtCardBox, theme.inputBg]}>
+                      {/* Card Top Row */}
+                      <View style={styles.debtCardHeader}>
+                        <View style={styles.debtHeaderLeft}>
+                          <View style={styles.debtCategoryEmojiBox}>
+                            <Text style={{ fontSize: 20 }}>{catObj.icon}</Text>
+                          </View>
+                          <View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              <Text style={[styles.debtTitleText, theme.text]}>{debt.title}</Text>
+                              <View style={[styles.categoryChip, theme.card, { paddingVertical: 2, paddingHorizontal: 6, margin: 0 }]}>
+                                <Text style={[styles.categoryChipText, theme.subtext, { fontSize: 10 }]}>{catObj.label}</Text>
+                              </View>
+                            </View>
+                            <Text style={[styles.debtSubDateText, theme.subtext]}>
+                              Added: {debt.createdAt || 'N/A'} {debt.dueDate ? `• Target Due: ${debt.dueDate}` : ''}
+                            </Text>
+                          </View>
+                        </View>
+
+                        <View style={[styles.debtStatusPill, isSettled ? styles.debtPillSettled : styles.debtPillActive]}>
+                          {isSettled ? (
+                            <CheckCircleIcon size={12} color="#10b981" style={{ marginRight: 4 }} />
+                          ) : null}
+                          <Text style={[styles.debtStatusPillText, isSettled ? styles.textSuccess : styles.debtStatusActiveText]}>
+                            {isSettled ? 'FULLY PAID' : `${pct}% PAID`}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Remaining & Stats Row */}
+                      <View style={[styles.debtInnerStatBox, theme.card]}>
+                        <View style={styles.debtStatTop}>
+                          <View>
+                            <Text style={[styles.miniMetricLabel, theme.subtext]}>REMAINING BALANCE</Text>
+                            <Text className="fintech-mono" style={[styles.debtMainRemainingValue, isSettled ? styles.textSuccess : { color: '#f43f5e' }]}>
+                              {formatPeso(remAmt)}
+                            </Text>
+                          </View>
+                          <View style={{ alignItems: 'flex-end' }}>
+                            <Text style={[styles.miniMetricLabel, theme.subtext]}>TOTAL PRINCIPAL</Text>
+                            <Text className="fintech-mono" style={[styles.miniMetricValue, theme.text, { fontSize: 15 }]}>
+                              {formatPeso(debt.totalAmount)}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Progress Bar */}
+                        <View style={styles.progressSection}>
+                          <View style={styles.progressLabelsRow}>
+                            <Text style={[styles.progressSubLabel, theme.subtext]}>
+                              Repaid: {formatPeso(paidAmt)} ({pct}%)
+                            </Text>
+                            {debt.monthlyTarget > 0 && (
+                              <Text style={[styles.progressSubLabel, theme.subtext]}>
+                                Target: {formatPeso(debt.monthlyTarget)}/mo
+                              </Text>
+                            )}
+                          </View>
+                          <View style={styles.progressBarTrack}>
+                            <div
+                              className="progress-bar-animated"
+                              style={{
+                                height: '100%',
+                                backgroundColor: isSettled ? '#10b981' : '#3b82f6',
+                                borderRadius: 99,
+                                width: `${Math.min(pct, 100)}%`
+                              }}
+                            />
+                          </View>
+                        </View>
+
+                        {debt.notes ? (
+                          <Text style={[styles.debtNotesText, theme.subtext]}>
+                            📝 {debt.notes}
+                          </Text>
+                        ) : null}
+                      </View>
+
+                      {/* Action Buttons Row */}
+                      <View style={styles.debtCardActions}>
+                        <TouchableOpacity
+                          style={styles.primaryAddBtn}
+                          onPress={() => handleOpenPaymentModal(debt)}
+                          activeOpacity={0.85}
+                        >
+                          <PlusIcon size={14} color="#ffffff" style={{ marginRight: 6 }} />
+                          <Text style={styles.primaryAddBtnText}>+ Pay Installment / Fee</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={[styles.cancelBtn, theme.btnBg, { paddingHorizontal: 12 }]}
+                          onPress={() => toggleExpandDebt(debt.id)}
+                          activeOpacity={0.7}
+                        >
+                          <HistoryIcon size={14} color={iconColor} style={{ marginRight: 6 }} />
+                          <Text style={[theme.text, { fontSize: 12, fontWeight: '700' }]}>
+                            History ({debt.payments?.length || 0})
+                          </Text>
+                          {isExpanded ? (
+                            <ChevronUpIcon size={13} color={iconColor} style={{ marginLeft: 4 }} />
+                          ) : (
+                            <ChevronDownIcon size={13} color={iconColor} style={{ marginLeft: 4 }} />
+                          )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={[styles.iconBtnAction, theme.btnBg]}
+                          onPress={() => handleOpenEditDebt(debt)}
+                          activeOpacity={0.6}
+                        >
+                          <EditIcon size={13} color={iconColor} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={[styles.iconBtnAction, theme.btnBg]}
+                          onPress={() => promptDeleteDebt(debt)}
+                          activeOpacity={0.6}
+                        >
+                          <TrashIcon size={13} color="#f43f5e" />
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Expandable Payment History Table */}
+                      {isExpanded && (
+                        <View style={[styles.debtHistorySection, theme.card]}>
+                          <View style={styles.debtHistoryHeaderRow}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                              <HistoryIcon size={14} color="#10b981" />
+                              <Text style={[styles.debtHistoryTitle, theme.text]}>Installment Payment History</Text>
+                            </View>
+                            <Text style={[styles.breakdownMuted, theme.subtext]}>
+                              Total Paid: {formatPeso(paidAmt)}
+                            </Text>
+                          </View>
+
+                          {(debt.payments || []).length === 0 ? (
+                            <View style={{ paddingVertical: 14, alignItems: 'center' }}>
+                              <Text style={[styles.emptySubtitle, theme.subtext]}>
+                                No installment payments logged yet. Tap "+ Pay Installment / Fee" above.
+                              </Text>
+                            </View>
+                          ) : (
+                            <View style={{ gap: 6 }}>
+                              {debt.payments.map((p, idx) => (
+                                <View key={p.id || idx} style={[styles.debtPaymentRow, theme.inputBg]}>
+                                  <View style={styles.debtPaymentLeft}>
+                                    <View style={styles.debtPaymentIconCircle}>
+                                      <CheckIcon size={11} color="#10b981" />
+                                    </View>
+                                    <View>
+                                      <Text style={[styles.debtPaymentNoteText, theme.text]}>
+                                        {p.note || `Installment Payment`}
+                                      </Text>
+                                      <Text style={[styles.expDate, theme.subtext]}>
+                                        {p.date}
+                                      </Text>
+                                    </View>
+                                  </View>
+
+                                  <View style={styles.debtPaymentRight}>
+                                    <Text className="fintech-mono" style={[styles.debtPaymentAmtText, { color: '#10b981' }]}>
+                                      +{formatPeso(p.amount)}
+                                    </Text>
+                                    <TouchableOpacity
+                                      onPress={() => promptDeletePayment(debt, p)}
+                                      style={[styles.iconBtnAction, theme.btnBg, { width: 28, height: 28 }]}
+                                      activeOpacity={0.6}
+                                    >
+                                      <TrashIcon size={12} color="#f43f5e" />
+                                    </TouchableOpacity>
+                                  </View>
+                                </View>
+                              ))}
+                            </View>
+                          )}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        )}
+
         <Text style={[styles.fintechFooterText, theme.subtext]}>
           Enzo Soti &bull; Minimalist FinTech Budget Tracker Pro &bull; 100% Offline
         </Text>
@@ -1150,11 +1931,13 @@ export default function App() {
                   Quick Log Expense
                 </Dialog.Title>
               </div>
-              <Dialog.Close asChild>
-                <button style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}>
-                  ✕
-                </button>
-              </Dialog.Close>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}
+              >
+                ✕
+              </button>
             </div>
             
             <Dialog.Description style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#64748b', margin: 0 }}>
@@ -1226,11 +2009,13 @@ export default function App() {
             </View>
 
             <View style={styles.modalActionsFlex}>
-              <Dialog.Close asChild>
-                <TouchableOpacity style={[styles.cancelBtn, theme.btnBg]} activeOpacity={0.7}>
-                  <Text style={theme.text}>Cancel</Text>
-                </TouchableOpacity>
-              </Dialog.Close>
+              <TouchableOpacity
+                style={[styles.cancelBtn, theme.btnBg]}
+                onPress={() => setShowAddModal(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={theme.text}>Cancel</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.primaryAddBtn} onPress={() => handleAddExpense(true)} activeOpacity={0.85}>
                 <CheckIcon size={16} color="#ffffff" style={{ marginRight: 6 }} />
                 <Text style={styles.primaryAddBtnText}>Save Expense</Text>
@@ -1261,11 +2046,13 @@ export default function App() {
             </Dialog.Description>
 
             <View style={styles.confirmModalBtnRow}>
-              <Dialog.Close asChild>
-                <TouchableOpacity style={[styles.confirmModalCancelBtn, theme.btnBg]} activeOpacity={0.7}>
-                  <Text style={[styles.confirmModalCancelText, theme.text]}>Cancel</Text>
-                </TouchableOpacity>
-              </Dialog.Close>
+              <TouchableOpacity
+                style={[styles.confirmModalCancelBtn, theme.btnBg]}
+                onPress={() => setConfirmModal(null)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.confirmModalCancelText, theme.text]}>Cancel</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.confirmModalActionBtn,
@@ -1298,11 +2085,13 @@ export default function App() {
                   Attendance & Tardiness Sheet
                 </Dialog.Title>
               </div>
-              <Dialog.Close asChild>
-                <button style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}>
-                  ✕
-                </button>
-              </Dialog.Close>
+              <button
+                type="button"
+                onClick={() => setShowAttendanceModal(false)}
+                style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}
+              >
+                ✕
+              </button>
             </div>
 
             <Dialog.Description style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#64748b', margin: 0 }}>
@@ -1423,12 +2212,14 @@ export default function App() {
               </View>
             </View>
 
-            <Dialog.Close asChild>
-              <TouchableOpacity style={styles.primaryAddBtn} activeOpacity={0.85}>
-                <CheckIcon size={16} color="#ffffff" style={{ marginRight: 6 }} />
-                <Text style={styles.primaryAddBtnText}>Save & Close Sheet</Text>
-              </TouchableOpacity>
-            </Dialog.Close>
+            <TouchableOpacity
+              style={styles.primaryAddBtn}
+              onPress={() => setShowAttendanceModal(false)}
+              activeOpacity={0.85}
+            >
+              <CheckIcon size={16} color="#ffffff" style={{ marginRight: 6 }} />
+              <Text style={styles.primaryAddBtnText}>Save & Close Sheet</Text>
+            </TouchableOpacity>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
@@ -1442,11 +2233,13 @@ export default function App() {
               <Dialog.Title style={{ fontSize: 16, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', margin: 0 }}>
                 Edit Expense Record
               </Dialog.Title>
-              <Dialog.Close asChild>
-                <button style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}>
-                  ✕
-                </button>
-              </Dialog.Close>
+              <button
+                type="button"
+                onClick={() => setEditItem(null)}
+                style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}
+              >
+                ✕
+              </button>
             </div>
 
             <Dialog.Description style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#64748b', margin: 0 }}>
@@ -1477,13 +2270,351 @@ export default function App() {
             />
 
             <View style={styles.modalActionsFlex}>
-              <Dialog.Close asChild>
-                <TouchableOpacity style={[styles.cancelBtn, theme.btnBg]} activeOpacity={0.7}>
-                  <Text style={theme.text}>Cancel</Text>
-                </TouchableOpacity>
-              </Dialog.Close>
+              <TouchableOpacity
+                style={[styles.cancelBtn, theme.btnBg]}
+                onPress={() => setEditItem(null)}
+                activeOpacity={0.7}
+              >
+                <Text style={theme.text}>Cancel</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.primaryAddBtn} onPress={handleSaveEdit} activeOpacity={0.85}>
                 <Text style={styles.primaryAddBtnText}>Save Changes</Text>
+              </TouchableOpacity>
+            </View>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      {/* 5. RADIX UI DIALOG: ADD NEW DEBT MODAL */}
+      <Dialog.Root open={showAddDebtModal} onOpenChange={setShowAddDebtModal}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="radix-dialog-overlay" />
+          <Dialog.Content className={`radix-dialog-content ${!isDark ? 'light-mode-dialog' : ''}`}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <CreditCardIcon size={18} color="#10b981" />
+                <Dialog.Title style={{ fontSize: 16, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', margin: 0 }}>
+                  Record New Debt / Loan
+                </Dialog.Title>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddDebtModal(false)}
+                style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <Dialog.Description style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#64748b', margin: 0 }}>
+              Add a loan or debt (e.g. Motorcycle ₱80k, Personal, Gadgets) to track installments.
+            </Dialog.Description>
+
+            {/* Category Selector */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, theme.subtext]}>Category:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+                {DEBT_CATEGORIES.map(cat => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[styles.categoryChip, debtCategory === cat.id ? { backgroundColor: '#10b981' } : theme.inputBg]}
+                    onPress={() => setDebtCategory(cat.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ fontSize: 13, marginRight: 4 }}>{cat.icon}</Text>
+                    <Text style={[styles.categoryChipText, debtCategory === cat.id ? { color: '#ffffff', fontWeight: '800' } : theme.text]}>
+                      {cat.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, theme.subtext]}>Debt / Loan Name *</Text>
+              <TextInput
+                style={[styles.fintechTextInput, theme.inputBg, theme.text]}
+                placeholder="e.g. Motorcycle Loan, Laptop Installment, Credit Card..."
+                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                value={debtTitle}
+                onChangeText={setDebtTitle}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, theme.subtext]}>Total Principal Amount (₱) *</Text>
+              <TextInput
+                style={[styles.fintechTextInput, theme.inputBg, theme.text]}
+                placeholder="e.g. 80000"
+                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                keyboardType="numeric"
+                value={debtAmount}
+                onChangeText={setDebtAmount}
+              />
+            </View>
+
+            <View style={styles.twoColumnGrid}>
+              <View style={styles.gridColumn}>
+                <Text style={[styles.inputLabel, theme.subtext]}>Monthly Target (₱) (Optional)</Text>
+                <TextInput
+                  style={[styles.fintechTextInput, theme.inputBg, theme.text]}
+                  placeholder="e.g. 3500"
+                  placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                  keyboardType="numeric"
+                  value={debtMonthlyTarget}
+                  onChangeText={setDebtMonthlyTarget}
+                />
+              </View>
+
+              <View style={styles.gridColumn}>
+                <Text style={[styles.inputLabel, theme.subtext]}>Target Due Date (Optional)</Text>
+                <input
+                  type="date"
+                  className={dateInputClassName}
+                  value={debtDueDate}
+                  onChange={(e) => setDebtDueDate(e.target.value)}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, theme.subtext]}>Notes / Terms (Optional)</Text>
+              <TextInput
+                style={[styles.fintechTextInput, theme.inputBg, theme.text]}
+                placeholder="e.g. 24 months to pay, due every 15th"
+                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                value={debtNotes}
+                onChangeText={setDebtNotes}
+              />
+            </View>
+
+            <View style={styles.modalActionsFlex}>
+              <TouchableOpacity
+                style={[styles.cancelBtn, theme.btnBg]}
+                onPress={() => setShowAddDebtModal(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={theme.text}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.primaryAddBtn} onPress={handleCreateDebt} activeOpacity={0.85}>
+                <CheckIcon size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                <Text style={styles.primaryAddBtnText}>Save Debt Record</Text>
+              </TouchableOpacity>
+            </View>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      {/* 6. RADIX UI DIALOG: EDIT DEBT MODAL */}
+      <Dialog.Root open={!!editDebtItem} onOpenChange={(open) => !open && setEditDebtItem(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="radix-dialog-overlay" />
+          <Dialog.Content className={`radix-dialog-content ${!isDark ? 'light-mode-dialog' : ''}`}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Dialog.Title style={{ fontSize: 16, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', margin: 0 }}>
+                Edit Debt / Loan Record
+              </Dialog.Title>
+              <button
+                type="button"
+                onClick={() => setEditDebtItem(null)}
+                style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <Dialog.Description style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#64748b', margin: 0 }}>
+              Update title, principal total, target installment, or notes.
+            </Dialog.Description>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, theme.subtext]}>Category:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+                {DEBT_CATEGORIES.map(cat => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[styles.categoryChip, debtCategory === cat.id ? { backgroundColor: '#10b981' } : theme.inputBg]}
+                    onPress={() => setDebtCategory(cat.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ fontSize: 13, marginRight: 4 }}>{cat.icon}</Text>
+                    <Text style={[styles.categoryChipText, debtCategory === cat.id ? { color: '#ffffff', fontWeight: '800' } : theme.text]}>
+                      {cat.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, theme.subtext]}>Debt / Loan Name</Text>
+              <TextInput
+                style={[styles.fintechTextInput, theme.inputBg, theme.text]}
+                value={debtTitle}
+                onChangeText={setDebtTitle}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, theme.subtext]}>Total Principal Amount (₱)</Text>
+              <TextInput
+                style={[styles.fintechTextInput, theme.inputBg, theme.text]}
+                value={debtAmount}
+                onChangeText={setDebtAmount}
+                keyboardType="numeric"
+              />
+            </View>
+
+            <View style={styles.twoColumnGrid}>
+              <View style={styles.gridColumn}>
+                <Text style={[styles.inputLabel, theme.subtext]}>Monthly Target (₱)</Text>
+                <TextInput
+                  style={[styles.fintechTextInput, theme.inputBg, theme.text]}
+                  value={debtMonthlyTarget}
+                  onChangeText={setDebtMonthlyTarget}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.gridColumn}>
+                <Text style={[styles.inputLabel, theme.subtext]}>Target Due Date</Text>
+                <input
+                  type="date"
+                  className={dateInputClassName}
+                  value={debtDueDate}
+                  onChange={(e) => setDebtDueDate(e.target.value)}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, theme.subtext]}>Notes / Terms</Text>
+              <TextInput
+                style={[styles.fintechTextInput, theme.inputBg, theme.text]}
+                value={debtNotes}
+                onChangeText={setDebtNotes}
+              />
+            </View>
+
+            <View style={styles.modalActionsFlex}>
+              <TouchableOpacity
+                style={[styles.cancelBtn, theme.btnBg]}
+                onPress={() => setEditDebtItem(null)}
+                activeOpacity={0.7}
+              >
+                <Text style={theme.text}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.primaryAddBtn} onPress={handleSaveEditDebt} activeOpacity={0.85}>
+                <Text style={styles.primaryAddBtnText}>Save Changes</Text>
+              </TouchableOpacity>
+            </View>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      {/* 7. RADIX UI DIALOG: RECORD INSTALLMENT / FEE MODAL */}
+      <Dialog.Root open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="radix-dialog-overlay" />
+          <Dialog.Content className={`radix-dialog-content ${!isDark ? 'light-mode-dialog' : ''}`}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <PlusIcon size={18} color="#10b981" />
+                <Dialog.Title style={{ fontSize: 16, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', margin: 0 }}>
+                  Record Installment / Fee Payment
+                </Dialog.Title>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(false)}
+                style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {selectedDebtForPayment && (
+              <View style={[styles.modalBanner, theme.inputBg]}>
+                <Text style={[styles.modalBannerText, theme.text]}>
+                  Recording payment for <Text style={{ fontWeight: '800', color: '#10b981' }}>{selectedDebtForPayment.title}</Text>{"\n"}
+                  Current Remaining: <Text style={{ fontWeight: '800', color: '#f43f5e' }}>{formatPeso(Math.max(0, selectedDebtForPayment.totalAmount - (selectedDebtForPayment.payments || []).reduce((s, p) => s + p.amount, 0)))}</Text>
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, theme.subtext]}>Payment Date</Text>
+              <input
+                type="date"
+                className={dateInputClassName}
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, theme.subtext]}>Payment / Installment Note</Text>
+              <TextInput
+                style={[styles.fintechTextInput, theme.inputBg, theme.text]}
+                placeholder="e.g. Monthly Amortization #1, Downpayment, Fee..."
+                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                value={paymentNote}
+                onChangeText={setPaymentNote}
+              />
+            </View>
+
+            {/* Amount with Quick Chips */}
+            <View style={styles.inputGroup}>
+              <View style={styles.amountHeaderRow}>
+                <Text style={[styles.inputLabel, theme.subtext]}>Payment Amount (₱)</Text>
+                <View style={styles.chipsRow}>
+                  {DEBT_PAYMENT_CHIPS.map(chip => (
+                    <TouchableOpacity
+                      key={chip}
+                      style={[styles.amountChip, theme.inputBg]}
+                      onPress={() => handleAddPaymentChip(chip)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.amountChipText}>+{chip >= 1000 ? `${chip / 1000}k` : chip}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              <TextInput
+                style={[styles.fintechTextInput, theme.inputBg, theme.text]}
+                placeholder="0.00"
+                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                keyboardType="numeric"
+                value={paymentAmount}
+                onChangeText={setPaymentAmount}
+              />
+            </View>
+
+            {/* Sync with Expenses Option */}
+            <TouchableOpacity
+              style={styles.checkboxRow}
+              onPress={() => setSyncWithExpenses(!syncWithExpenses)}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.checkboxBox, syncWithExpenses && styles.checkboxBoxChecked]}>
+                {syncWithExpenses && <CheckIcon size={12} color="#ffffff" />}
+              </View>
+              <Text style={[styles.checkboxLabel, theme.text]}>
+                Also log as an expense in Daily Budget for {paymentDate}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.modalActionsFlex}>
+              <TouchableOpacity
+                style={[styles.cancelBtn, theme.btnBg]}
+                onPress={() => setShowPaymentModal(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={theme.text}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.primaryAddBtn} onPress={handleRecordPayment} activeOpacity={0.85}>
+                <CheckIcon size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                <Text style={styles.primaryAddBtnText}>Save Payment</Text>
               </TouchableOpacity>
             </View>
           </Dialog.Content>
@@ -1518,10 +2649,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9980,
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
+    boxShadow: '0 6px 12px rgba(16, 185, 129, 0.35)',
   },
 
   /* Floating Toast Alert */
@@ -1533,10 +2661,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
+    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.25)',
     maxWidth: '90%',
   },
   toastSuccess: {
@@ -1595,17 +2720,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    boxShadow: '0 3px 6px rgba(0, 0, 0, 0.2)',
   },
   confirmBtnDanger: {
     backgroundColor: '#f43f5e',
-    shadowColor: '#f43f5e',
+    boxShadow: '0 3px 6px rgba(244, 63, 94, 0.3)',
   },
   confirmBtnSuccess: {
     backgroundColor: '#10b981',
-    shadowColor: '#10b981',
+    boxShadow: '0 3px 6px rgba(16, 185, 129, 0.3)',
   },
   confirmModalActionText: {
     color: '#ffffff',
@@ -1690,10 +2813,7 @@ const styles = StyleSheet.create({
   },
   segmentTabActive: {
     backgroundColor: '#10b981',
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    boxShadow: '0 2px 6px rgba(16, 185, 129, 0.2)',
   },
   segmentTabText: {
     fontSize: 12,
@@ -1710,10 +2830,7 @@ const styles = StyleSheet.create({
     padding: 18,
     borderWidth: 1,
     gap: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
+    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.08)',
   },
   cardHeaderFlex: {
     flexDirection: 'row',
@@ -1748,19 +2865,18 @@ const styles = StyleSheet.create({
 
   /* 1-Tap Presets */
   presetSection: {
-    gap: 6,
+    gap: 8,
   },
   presetPillsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   presetPill: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   presetPillText: {
     fontSize: 11,
@@ -1769,7 +2885,8 @@ const styles = StyleSheet.create({
 
   /* Categories & Quick Chips */
   categoryScroll: {
-    gap: 8,
+    flexDirection: 'row',
+    gap: 6,
     paddingVertical: 2,
   },
   categoryChip: {
@@ -1779,11 +2896,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   categoryChipText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
   },
   amountHeaderRow: {
     flexDirection: 'row',
@@ -1792,14 +2908,13 @@ const styles = StyleSheet.create({
   },
   chipsRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 4,
   },
   amountChip: {
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
   },
   amountChipText: {
     fontSize: 11,
@@ -1876,10 +2991,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     marginTop: 4,
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    boxShadow: '0 3px 8px rgba(16, 185, 129, 0.2)',
   },
   primaryAddBtnText: {
     color: '#ffffff',
@@ -1972,10 +3084,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
   },
   heroHealthy: {
     backgroundColor: '#059669',
@@ -2297,6 +3406,266 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 11,
     marginVertical: 10,
+  },
+
+  /* Debts & Loans Components */
+  debtOverviewBanner: {
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    gap: 10,
+  },
+  debtOverviewTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  debtTotalRemainingText: {
+    fontSize: 22,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  debtPayoffBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  debtPayoffBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#10b981',
+  },
+  debtOverviewFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  debtMiniItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    gap: 8,
+  },
+  debtMiniLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  debtMiniPayBtn: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  debtMiniPayBtnText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  debtManagerHeroBanner: {
+    borderRadius: 14,
+    padding: 16,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.2)',
+  },
+  debtHeroMetricsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  debtFilterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  debtFilterActive: {
+    backgroundColor: '#10b981',
+  },
+  debtFilterActiveText: {
+    color: '#ffffff',
+    fontWeight: '800',
+  },
+  debtCardBox: {
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.07)',
+    gap: 12,
+  },
+  debtCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  debtHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    flexWrap: 'wrap',
+  },
+  debtCategoryEmojiBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  debtTitleText: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  debtSubDateText: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  debtStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  debtPillActive: {
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+  },
+  debtPillSettled: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  debtStatusPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  debtStatusActiveText: {
+    color: '#f59e0b',
+  },
+  debtInnerStatBox: {
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    gap: 10,
+  },
+  debtStatTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  debtMainRemainingValue: {
+    fontSize: 22,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  debtNotesText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
+  debtCardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  debtHistorySection: {
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    gap: 8,
+    marginTop: 4,
+  },
+  debtHistoryHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    paddingBottom: 6,
+  },
+  debtHistoryTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  debtPaymentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 8,
+    borderRadius: 8,
+    gap: 8,
+  },
+  debtPaymentLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  debtPaymentIconCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  debtPaymentNoteText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  debtPaymentRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  debtPaymentAmtText: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 6,
+    cursor: 'pointer',
+  },
+  checkboxBox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#10b981',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  checkboxBoxChecked: {
+    backgroundColor: '#10b981',
+  },
+  checkboxLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+  },
+  textDanger: {
+    color: '#f43f5e',
+  },
+  textSuccess: {
+    color: '#10b981',
   }
 });
 
