@@ -1230,7 +1230,7 @@ export default function App() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <TouchableOpacity style={[styles.presetPill, theme.btnBg, { flexDirection: 'row', alignItems: 'center', gap: 4 }]} onPress={() => setShowReportModal(true)} activeOpacity={0.85}>
                       <FileTextIcon size={13} color="#10b981" />
-                      <Text style={[styles.presetPillText, { color: '#10b981', fontWeight: '800' }]}>Statement</Text>
+                      <Text style={[styles.presetPillText, { color: '#10b981', fontWeight: '800' }]}>PDF Report</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.attendanceBtn} onPress={() => setShowAttendanceModal(true)} activeOpacity={0.85}>
                       <CalendarIcon size={14} color="#ffffff" style={{ marginRight: 5 }} />
@@ -3140,129 +3140,251 @@ export default function App() {
         </Dialog.Portal>
       </Dialog.Root>
 
-      {/* 8. RADIX UI DIALOG: CUT-OFF PAYSLIP & SUMMARY REPORT MODAL */}
+      {/* 8. RADIX UI DIALOG: CUT-OFF FINANCIAL STATEMENT & BUDGET REPORT MODAL (EXECUTIVE SUMMARY) */}
       <Dialog.Root open={showReportModal} onOpenChange={setShowReportModal}>
         <Dialog.Portal>
           <Dialog.Overlay className="radix-dialog-overlay" />
-          <Dialog.Content className={`radix-dialog-content printable-payslip ${!isDark ? 'light-mode-dialog' : ''}`} style={{ maxWidth: 640 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <FileTextIcon size={20} color="#10b981" />
+          <Dialog.Content className={`radix-dialog-content printable-payslip ${!isDark ? 'light-mode-dialog' : ''}`} style={{ maxWidth: 680, padding: 22 }}>
+            
+            {/* Report Header Bar */}
+            <div style={{ borderBottom: isDark ? '2px solid rgba(255,255,255,0.15)' : '2px solid #0f172a', paddingBottom: 10, marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <Dialog.Title style={{ fontSize: 17, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', margin: 0 }}>
-                    Cut-off Financial Statement & Payslip
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <BriefcaseIcon size={20} color="#10b981" />
+                    <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: 1, textTransform: 'uppercase', color: '#10b981' }}>
+                      BUDGET PRO • FINANCIAL MANAGEMENT
+                    </span>
+                  </div>
+                  <Dialog.Title style={{ fontSize: 17, fontWeight: 900, color: isDark ? '#f8fafc' : '#0f172a', margin: '3px 0 0 0', letterSpacing: -0.3 }}>
+                    SEMI-MONTHLY CUT-OFF BUDGET & COMPENSATION REPORT
                   </Dialog.Title>
-                  <Dialog.Description style={{ fontSize: 11, color: isDark ? '#94a3b8' : '#64748b', margin: '2px 0 0 0' }}>
-                    Statement Period: {cutoffStart} to {cutoffEnd}
-                  </Dialog.Description>
                 </div>
+                <button
+                  type="button"
+                  className="no-print"
+                  onClick={() => setShowReportModal(false)}
+                  style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}
+                >
+                  ✕
+                </button>
               </div>
-              <button
-                type="button"
-                className="no-print"
-                onClick={() => setShowReportModal(false)}
-                style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}
-              >
-                ✕
-              </button>
             </div>
 
-            {/* Payslip Header Card */}
-            <View style={[styles.salaryHeroBanner, theme.heroSalaryBg, { padding: 14, gap: 10 }]}>
-              <View style={styles.heroBannerHeader}>
-                <Text style={styles.heroTag}>PAYSLIP SUMMARY</Text>
-                <View style={styles.workdaysPill}>
-                  <Text style={styles.workdaysPillText}>
-                    {totalAttendedDays} Workdays
-                  </Text>
-                </View>
-              </View>
+            {/* 4-Box Metadata Header Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 12, backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : '#f8fafc', border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0', borderRadius: 8, padding: 8 }}>
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 800, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase' }}>Period</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#f8fafc' : '#0f172a', marginTop: 2 }}>{cutoffStart} ~ {cutoffEnd}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 800, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase' }}>Generated</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#f8fafc' : '#0f172a', marginTop: 2 }}>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 800, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase' }}>Attendance</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#10b981', marginTop: 2 }}>{totalAttendedDays} / {totalScheduledDays} Workdays</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 800, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase' }}>Salary Base</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#f8fafc' : '#0f172a', marginTop: 2 }}>{formatPeso(monthlySalary || 21000)}/mo</div>
+              </div>
+            </div>
 
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 }}>
-                <View>
-                  <Text style={[styles.inputLabel, theme.subtext]}>Net Take-Home Pay</Text>
-                  <Text className="fintech-mono" style={[styles.heroSalaryValue, { fontSize: 24 }]}>
-                    {formatPeso(calculatedCutoffSalary)}
-                  </Text>
-                </View>
-                <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                  {additionalPayoutAmount > 0 && (
-                    <Text style={{ color: '#10b981', fontWeight: '800', fontSize: 12 }}>
-                      + Finance Addition: +{formatPeso(additionalPayoutAmount)}
-                    </Text>
-                  )}
-                  {totalTardyDeduction > 0 && (
-                    <Text style={[styles.breakdownTardy, { fontSize: 12 }]}>
-                      Tardiness: -{formatPeso(totalTardyDeduction)}
-                    </Text>
-                  )}
-                  <Text style={[styles.breakdownMuted, { fontSize: 11 }]}>
-                    Base: {formatPeso(baseCutoffPay)}
-                  </Text>
-                </View>
-              </View>
-            </View>
+            {/* Top 3 KPI Executive Highlights */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
+              <div style={{ backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.08)', border: '1.5px solid rgba(16, 185, 129, 0.3)', borderRadius: 8, padding: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: 9.5, fontWeight: 800, color: '#10b981', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Net Inflow (Take-Home)
+                </div>
+                <div className="fintech-mono" style={{ fontSize: 16, fontWeight: 900, color: '#10b981', marginTop: 2 }}>
+                  {formatPeso(calculatedCutoffSalary)}
+                </div>
+              </div>
 
-            {/* Financial Health Summary Metric Boxes */}
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              <View style={[styles.miniMetricBox, { backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : '#f1f5f9' }]}>
-                <Text style={[styles.miniMetricLabel, theme.subtext]}>Total Cut-off Expenses</Text>
-                <Text className="fintech-mono" style={[styles.miniMetricValue, { color: '#f43f5e', fontSize: 16 }]}>
+              <div style={{ backgroundColor: isDark ? 'rgba(244, 63, 94, 0.10)' : 'rgba(244, 63, 94, 0.06)', border: '1.5px solid rgba(244, 63, 94, 0.3)', borderRadius: 8, padding: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: 9.5, fontWeight: 800, color: '#f43f5e', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Total Outflow (Disbursed)
+                </div>
+                <div className="fintech-mono" style={{ fontSize: 16, fontWeight: 900, color: '#f43f5e', marginTop: 2 }}>
                   -{formatPeso(cutoffExpensesTotal)}
-                </Text>
-              </View>
-              <View style={[styles.miniMetricBox, { backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : '#f1f5f9' }]}>
-                <Text style={[styles.miniMetricLabel, theme.subtext]}>Loan Payments in Cut-off</Text>
-                <Text className="fintech-mono" style={[styles.miniMetricValue, { color: '#f59e0b', fontSize: 16 }]}>
-                  {formatPeso(cutoffDebtsTotal)}
-                </Text>
-              </View>
-              <View style={[styles.miniMetricBox, { backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : '#f1f5f9' }]}>
-                <Text style={[styles.miniMetricLabel, theme.subtext]}>Net Free Cash Remaining</Text>
-                <Text className="fintech-mono" style={[styles.miniMetricValue, { color: cutoffNetFreeCash >= 0 ? '#10b981' : '#f43f5e', fontSize: 16 }]}>
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: isDark ? (cutoffNetFreeCash >= 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)') : (cutoffNetFreeCash >= 0 ? 'rgba(16, 185, 129, 0.10)' : 'rgba(244, 63, 94, 0.08)'), border: `1.5px solid ${cutoffNetFreeCash >= 0 ? '#10b981' : '#f43f5e'}`, borderRadius: 8, padding: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: 9.5, fontWeight: 800, color: cutoffNetFreeCash >= 0 ? '#10b981' : '#f43f5e', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Net Disposable Surplus
+                </div>
+                <div className="fintech-mono" style={{ fontSize: 16, fontWeight: 900, color: cutoffNetFreeCash >= 0 ? '#10b981' : '#f43f5e', marginTop: 2 }}>
                   {formatPeso(cutoffNetFreeCash)}
-                </Text>
-              </View>
-            </View>
+                </div>
+              </div>
+            </div>
 
-            {/* Category Breakdown in Statement */}
-            <View style={[styles.fintechCard, theme.inputBg, { padding: 12, gap: 8 }]}>
-              <Text style={[styles.cardTitle, theme.text, { fontSize: 13 }]}>Top Spending Breakdown</Text>
-              {categoryBreakdown.length === 0 ? (
-                <Text style={[styles.emptySubtitle, theme.subtext]}>No expenses logged during this cut-off period.</Text>
-              ) : (
-                categoryBreakdown.map(cat => (
-                  <View key={cat.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ fontSize: 13 }}>{cat.icon}</Text>
-                      <Text style={[{ fontSize: 12, fontWeight: '600' }, theme.text]}>{cat.label}</Text>
-                    </View>
-                    <Text className="fintech-mono" style={[{ fontSize: 12, fontWeight: '700' }, theme.text]}>
-                      {formatPeso(cat.total)} ({cat.pct}%)
-                    </Text>
-                  </View>
-                ))
-              )}
-            </View>
+            {/* Section 1: Inflow & Earnings Statement Table */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 10.5, fontWeight: 900, color: isDark ? '#cbd5e1' : '#1e293b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                1. Income & Salary Compensation Statement
+              </div>
+              <table className="report-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5, backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : '#ffffff' }}>
+                <tbody>
+                  <tr style={{ borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '5px 10px', color: isDark ? '#94a3b8' : '#475569' }}>Workday Attended Earnings ({totalAttendedDays} Days)</td>
+                    <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: '700', color: isDark ? '#f8fafc' : '#0f172a' }} className="fintech-mono">
+                      {formatPeso(grossCutoffSalary)}
+                    </td>
+                  </tr>
+                  {totalTardyMinutes > 0 && (
+                    <tr style={{ borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '5px 10px', color: '#f43f5e' }}>
+                        Tardiness Deductions ({totalTardyMinutes} mins)
+                      </td>
+                      <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: '700', color: '#f43f5e' }} className="fintech-mono">
+                        -{formatPeso(totalTardyDeduction)}
+                      </td>
+                    </tr>
+                  )}
+                  {additionalPayoutAmount > 0 && (
+                    <tr style={{ borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '5px 10px', color: '#10b981' }}>
+                        Pending Payout / Finance Addition {pendingPayoutNote ? `(${pendingPayoutNote})` : ''}
+                      </td>
+                      <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: '700', color: '#10b981' }} className="fintech-mono">
+                        +{formatPeso(additionalPayoutAmount)}
+                      </td>
+                    </tr>
+                  )}
+                  <tr style={{ backgroundColor: isDark ? 'rgba(16, 185, 129, 0.14)' : 'rgba(16, 185, 129, 0.08)', fontWeight: 900 }}>
+                    <td style={{ padding: '7px 10px', color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 800 }}>
+                      TOTAL NET TAKE-HOME PAY (INFLOW)
+                    </td>
+                    <td style={{ padding: '7px 10px', textAlign: 'right', fontSize: 13, fontWeight: 900, color: '#10b981' }} className="fintech-mono">
+                      {formatPeso(calculatedCutoffSalary)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-            {/* Statement Actions */}
-            <View style={[styles.modalActionsFlex, { justifyContent: 'space-between' }]}>
-              <TouchableOpacity
-                style={[styles.exportBtn, { minWidth: 140 }]}
-                onPress={() => window.print()}
-                activeOpacity={0.85}
+            {/* Section 2: Budget Outflows & Deductions Table */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 10.5, fontWeight: 900, color: isDark ? '#cbd5e1' : '#1e293b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                2. Budget Disbursements & Deductions
+              </div>
+              <table className="report-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5, backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : '#ffffff' }}>
+                <tbody>
+                  <tr style={{ borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '5px 10px', color: isDark ? '#94a3b8' : '#475569' }}>
+                      Living Expenses Total
+                    </td>
+                    <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: '700', color: '#f43f5e' }} className="fintech-mono">
+                      -{formatPeso(cutoffExpensesTotal - cutoffDebtsTotal)}
+                    </td>
+                  </tr>
+                  <tr style={{ borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '5px 10px', color: isDark ? '#94a3b8' : '#475569' }}>
+                      Loan & Debt Installment Payments
+                    </td>
+                    <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: '700', color: '#f59e0b' }} className="fintech-mono">
+                      -{formatPeso(cutoffDebtsTotal)}
+                    </td>
+                  </tr>
+                  <tr style={{ backgroundColor: isDark ? 'rgba(244, 63, 94, 0.10)' : 'rgba(244, 63, 94, 0.05)', fontWeight: 800 }}>
+                    <td style={{ padding: '7px 10px', color: isDark ? '#f8fafc' : '#0f172a' }}>
+                      TOTAL BUDGET DISBURSED (OUTFLOW)
+                    </td>
+                    <td style={{ padding: '7px 10px', textAlign: 'right', fontSize: 13, fontWeight: 900, color: '#f43f5e' }} className="fintech-mono">
+                      -{formatPeso(cutoffExpensesTotal)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Section 3: Net Financial Position & Health */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 10.5, fontWeight: 900, color: isDark ? '#cbd5e1' : '#1e293b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                3. Budget Variance & Net Position
+              </div>
+              <table className="report-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5, backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : '#ffffff' }}>
+                <tbody>
+                  <tr style={{ borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '5px 10px', color: isDark ? '#94a3b8' : '#475569' }}>
+                      Budget Retention / Savings Ratio
+                    </td>
+                    <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: '700', color: cutoffNetFreeCash >= 0 ? '#10b981' : '#f43f5e' }}>
+                      {calculatedCutoffSalary > 0 ? `${Math.round((cutoffNetFreeCash / calculatedCutoffSalary) * 100)}% of income preserved` : '0%'}
+                    </td>
+                  </tr>
+                  <tr style={{ backgroundColor: isDark ? (cutoffNetFreeCash >= 0 ? 'rgba(16, 185, 129, 0.16)' : 'rgba(244, 63, 94, 0.16)') : (cutoffNetFreeCash >= 0 ? 'rgba(16, 185, 129, 0.10)' : 'rgba(244, 63, 94, 0.08)'), fontWeight: 900 }}>
+                    <td style={{ padding: '7px 10px', color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 900 }}>
+                      NET FREE CASH SURPLUS (REMAINING)
+                    </td>
+                    <td style={{ padding: '7px 10px', textAlign: 'right', fontSize: 14, fontWeight: 900, color: cutoffNetFreeCash >= 0 ? '#10b981' : '#f43f5e' }} className="fintech-mono">
+                      {formatPeso(cutoffNetFreeCash)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Formal Sign-off Verification Block */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #cbd5e1', paddingTop: 8, marginTop: 6, fontSize: 10, color: isDark ? '#94a3b8' : '#64748b' }}>
+              <div>
+                <span>Prepared by: <strong>Account Holder</strong></span>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span>Status: <strong style={{ color: cutoffNetFreeCash >= 0 ? '#10b981' : '#f43f5e' }}>{cutoffNetFreeCash >= 0 ? '🟢 Surplus Standing' : '🔴 Deficit Standing'}</strong></span>
+              </div>
+            </div>
+
+            {/* Report Footer */}
+            <div style={{ textAlign: 'center', marginTop: 4 }}>
+              <span style={{ fontSize: 9.5, color: isDark ? '#64748b' : '#94a3b8' }}>
+                Confidential Personal Financial Report • Generated automatically via Budget Pro System
+              </span>
+            </div>
+
+            {/* Action Buttons (Strictly Hidden on Print) */}
+            <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, gap: 10 }}>
+              <button
+                type="button"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: '#10b981',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: 13,
+                  padding: '10px 18px',
+                  borderRadius: 10,
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(16,185,129,0.3)'
+                }}
+                onClick={() => window.print()}
               >
-                <PrinterIcon size={15} color="#ffffff" style={{ marginRight: 6 }} />
-                <Text style={styles.exportBtnText}>Print / Save PDF</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.cancelBtn, theme.btnBg, { minWidth: 90 }]}
-                onPress={() => setShowReportModal(false)}
-                activeOpacity={0.7}
+                <PrinterIcon size={15} color="#ffffff" />
+                Print / Save as PDF
+              </button>
+              <button
+                type="button"
+                style={{
+                  backgroundColor: isDark ? '#334155' : '#e2e8f0',
+                  color: isDark ? '#f8fafc' : '#0f172a',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  padding: '10px 18px',
+                  borderRadius: 10,
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+                onClick={() => setShowReportModal(false)}
               >
-                <Text style={theme.text}>Close</Text>
-              </TouchableOpacity>
-            </View>
+                Close
+              </button>
+            </div>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
