@@ -134,24 +134,46 @@
     .responsive-row {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 16px;
       width: 100%;
     }
 
     .responsive-col {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 16px;
       flex: 1;
       width: 100%;
       min-width: 0;
+    }
+
+    .responsive-col:empty,
+    .responsive-row:empty {
+      display: none !important;
     }
 
     @media (min-width: 860px) {
       .responsive-row {
         flex-direction: row !important;
         align-items: flex-start !important;
+        gap: 20px !important;
       }
+      .responsive-col {
+        gap: 20px !important;
+      }
+    }
+
+    /* Horizontal Tab Bar Scroll Container */
+    .tab-scroll-container {
+      display: flex;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      width: 100%;
+    }
+    .tab-scroll-container::-webkit-scrollbar {
+      display: none;
     }
 
     /* RADIX UI DIALOG STYLES & ANIMATIONS */
@@ -169,20 +191,21 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 92%;
-      max-width: 560px;
-      max-height: 90vh;
+      width: calc(100% - 32px);
+      max-width: 540px;
+      max-height: calc(100dvh - 32px);
       overflow-y: auto;
       background-color: #101726;
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 20px;
-      padding: 24px;
+      padding: 22px;
       z-index: 9991;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
       animation: radixContentShow 200ms cubic-bezier(0.16, 1, 0.3, 1);
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 15px;
+      box-sizing: border-box;
     }
 
     .radix-dialog-content.light-mode-dialog {
@@ -197,19 +220,46 @@
       align-items: center;
     }
 
+    @media (max-width: 520px) {
+      .radix-dialog-content {
+        width: calc(100% - 24px) !important;
+        max-height: calc(100dvh - 24px) !important;
+        padding: 16px 14px !important;
+        border-radius: 16px !important;
+        gap: 12px !important;
+      }
+      .modern-date-input {
+        font-size: 12px !important;
+        padding: 8px 10px !important;
+      }
+    }
+
     @keyframes radixOverlayShow {
       from { opacity: 0; }
       to { opacity: 1; }
     }
 
-    @keyframes radixContentShow {
-      from {
-        opacity: 0;
-        transform: translate(-50%, -48%) scale(0.96);
+    /* Print Styles for Clean Payslip / Summary Export */
+    @media print {
+      body, html, #root {
+        background: #ffffff !important;
+        color: #000000 !important;
+        height: auto !important;
+        overflow: visible !important;
       }
-      to {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
+      .no-print,
+      .radix-dialog-overlay,
+      .floating-action-btn,
+      button {
+        display: none !important;
+      }
+      .printable-payslip {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        padding: 20px !important;
       }
     }
   </style>

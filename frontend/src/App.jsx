@@ -182,24 +182,49 @@ const ChevronUpIcon = (props) => (
   </SvgIcon>
 );
 
+const PieChartIcon = (props) => (
+  <SvgIcon {...props}>
+    <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+    <path d="M22 12A10 10 0 0 0 12 2v10z" />
+  </SvgIcon>
+);
+
+const PrinterIcon = (props) => (
+  <SvgIcon {...props}>
+    <polyline points="6 9 6 2 18 2 18 9" />
+    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+    <rect x="6" y="14" width="12" height="8" />
+  </SvgIcon>
+);
+
+const FileTextIcon = (props) => (
+  <SvgIcon {...props}>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <polyline points="10 9 9 9 8 9" />
+  </SvgIcon>
+);
+
 const EXPENSE_CATEGORIES = [
-  { id: 'food', label: 'Food / Meals', icon: '🍔', prefix: 'Meal: ' },
-  { id: 'transport', label: 'Transport', icon: '🚗', prefix: 'Fare / Gas: ' },
-  { id: 'bills', label: 'Bills', icon: '⚡', prefix: 'Bill: ' },
-  { id: 'groceries', label: 'Groceries', icon: '🛒', prefix: 'Groceries: ' },
-  { id: 'snacks', label: 'Coffee / Snacks', icon: '☕', prefix: 'Coffee: ' },
-  { id: 'health', label: 'Health', icon: '💊', prefix: 'Medicine: ' },
-  { id: 'misc', label: 'Shopping', icon: '🛍️', prefix: 'Purchase: ' },
+  { id: 'food', label: 'Food / Meals', icon: '🍔', prefix: 'Meal: ', color: '#f59e0b' },
+  { id: 'transport', label: 'Transport', icon: '🚗', prefix: 'Fare / Gas: ', color: '#3b82f6' },
+  { id: 'bills', label: 'Bills', icon: '⚡', prefix: 'Bill: ', color: '#8b5cf6' },
+  { id: 'groceries', label: 'Groceries', icon: '🛒', prefix: 'Groceries: ', color: '#10b981' },
+  { id: 'snacks', label: 'Coffee / Snacks', icon: '☕', prefix: 'Coffee: ', color: '#ec4899' },
+  { id: 'health', label: 'Health', icon: '💊', prefix: 'Medicine: ', color: '#06b6d4' },
+  { id: 'misc', label: 'Shopping', icon: '🛍️', prefix: 'Purchase: ', color: '#94a3b8' },
 ];
 
 const DEBT_CATEGORIES = [
-  { id: 'vehicle', label: 'Motorcycle / Vehicle', icon: '🏍️' },
-  { id: 'personal', label: 'Personal Loan', icon: '🤝' },
-  { id: 'gadget', label: 'Gadget / Appliance', icon: '📱' },
-  { id: 'credit', label: 'Credit Card', icon: '💳' },
-  { id: 'housing', label: 'Housing / Rent', icon: '🏠' },
-  { id: 'emergency', label: 'Emergency / Medical', icon: '🏥' },
-  { id: 'other', label: 'Other Debt', icon: '📝' },
+  { id: 'vehicle', label: 'Motorcycle / Vehicle', icon: '🏍️', color: '#f43f5e' },
+  { id: 'personal', label: 'Personal Loan', icon: '🤝', color: '#fb923c' },
+  { id: 'gadget', label: 'Gadget / Appliance', icon: '📱', color: '#a855f7' },
+  { id: 'credit', label: 'Credit Card', icon: '💳', color: '#ef4444' },
+  { id: 'housing', label: 'Housing / Rent', icon: '🏠', color: '#eab308' },
+  { id: 'emergency', label: 'Emergency / Medical', icon: '🏥', color: '#14b8a6' },
+  { id: 'other', label: 'Other Debt', icon: '📝', color: '#64748b' },
 ];
 
 const AMOUNT_CHIPS = [50, 100, 200, 500, 1000];
@@ -262,6 +287,8 @@ export default function App() {
   const [expenseDate, setExpenseDate] = useState(getTodayString());
   
   const [cutoffBasePay, setCutoffBasePay] = useState('10500');
+  const [pendingPayout, setPendingPayout] = useState('0');
+  const [pendingPayoutNote, setPendingPayoutNote] = useState('');
   
   // Radix UI Dialog States
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
@@ -291,6 +318,13 @@ export default function App() {
   const [paymentDate, setPaymentDate] = useState(getTodayString());
   const [paymentNote, setPaymentNote] = useState('');
   const [syncWithExpenses, setSyncWithExpenses] = useState(true);
+
+  // Analytics & Calendar Heatmap States
+  const [analyticsRange, setAnalyticsRange] = useState('CUTOFF'); // 'CUTOFF', 'MONTH', 'ALL'
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState(null);
 
   // Map of Date -> Attendance Status ('FULL', 'SAT_FULL', 'HALF', 'SPECIAL_HOLIDAY', 'ABSENT', 'REST_DAY')
   const [attendanceMap, setAttendanceMap] = useState({});
@@ -340,6 +374,8 @@ export default function App() {
         if (parsed.cutoffBasePay) setCutoffBasePay(parsed.cutoffBasePay);
         if (parsed.cutoffStart) setCutoffStart(parsed.cutoffStart);
         if (parsed.cutoffEnd) setCutoffEnd(parsed.cutoffEnd);
+        if (parsed.pendingPayout !== undefined) setPendingPayout(parsed.pendingPayout);
+        if (parsed.pendingPayoutNote !== undefined) setPendingPayoutNote(parsed.pendingPayoutNote);
       }
     } catch (e) {
       console.error(e);
@@ -359,6 +395,8 @@ export default function App() {
         cutoffBasePay,
         cutoffStart,
         cutoffEnd,
+        pendingPayout,
+        pendingPayoutNote,
         debts,
         ...extra
       }));
@@ -703,7 +741,9 @@ export default function App() {
 
   const totalTardyDeduction = totalTardyMinutes * minuteRate;
   const netCalculatedCutoffSalary = Math.max(0, grossCutoffSalary - totalTardyDeduction);
-  const calculatedCutoffSalary = Math.round(netCalculatedCutoffSalary * 100) / 100;
+  const baseCutoffPay = Math.round(netCalculatedCutoffSalary * 100) / 100;
+  const additionalPayoutAmount = Math.max(0, parseFloat(pendingPayout) || 0);
+  const calculatedCutoffSalary = Math.round((baseCutoffPay + additionalPayoutAmount) * 100) / 100;
 
   const currentDateSalary = dailySalaries[selectedDate] !== undefined 
     ? dailySalaries[selectedDate] 
@@ -906,12 +946,147 @@ export default function App() {
   const iconColor = isDark ? "#f8fafc" : "#0f172a";
   const mutedIconColor = isDark ? "#94a3b8" : "#64748b";
 
+  // Analytics Filtered Expenses
+  const currentMonthPrefix = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}`;
+  
+  const analyticsExpenses = analyticsRange === 'CUTOFF'
+    ? expenses.filter(e => e.date >= cutoffStart && e.date <= cutoffEnd)
+    : analyticsRange === 'MONTH'
+    ? expenses.filter(e => e.date.startsWith(currentMonthPrefix))
+    : expenses;
+
+  const totalAnalyticsExpense = analyticsExpenses.reduce((s, e) => s + e.amount, 0);
+
+  // Categorize Expenses for Analytics
+  const ALL_ANALYTICS_CATEGORIES = [
+    ...EXPENSE_CATEGORIES,
+    { id: 'debts', label: 'Debt Payments', icon: '🏍️', prefix: 'Loan/Debt Pay:', color: '#f43f5e' }
+  ];
+
+  const categoryBreakdown = ALL_ANALYTICS_CATEGORIES.map(cat => {
+    let catExpenses = [];
+    if (cat.id === 'debts') {
+      catExpenses = analyticsExpenses.filter(e => e.debtPaymentId || e.name.toLowerCase().startsWith('loan/debt pay:'));
+    } else if (cat.id === 'misc') {
+      catExpenses = analyticsExpenses.filter(e => {
+        if (e.debtPaymentId || e.name.toLowerCase().startsWith('loan/debt pay:')) return false;
+        const matchesOther = EXPENSE_CATEGORIES.slice(0, 6).some(c => e.name.toLowerCase().startsWith(c.prefix.toLowerCase()) || e.name.toLowerCase().includes(c.label.toLowerCase()));
+        return !matchesOther;
+      });
+    } else {
+      catExpenses = analyticsExpenses.filter(e => {
+        if (e.debtPaymentId || e.name.toLowerCase().startsWith('loan/debt pay:')) return false;
+        return e.name.toLowerCase().startsWith(cat.prefix.toLowerCase()) || e.name.toLowerCase().includes(cat.label.toLowerCase());
+      });
+    }
+    const catTotal = catExpenses.reduce((s, e) => s + e.amount, 0);
+    const catPct = totalAnalyticsExpense > 0 ? Math.round((catTotal / totalAnalyticsExpense) * 100) : 0;
+    return {
+      ...cat,
+      total: catTotal,
+      pct: catPct,
+      count: catExpenses.length
+    };
+  }).filter(c => c.total > 0).sort((a, b) => b.total - a.total);
+
+  // Calendar Heatmap Generation
+  const calendarMonthName = new Date(calendarYear, calendarMonth, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const daysInCalendarMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+  const firstDayOfWeek = new Date(calendarYear, calendarMonth, 1).getDay(); // 0 = Sun, 1 = Mon ...
+  
+  const calendarDays = [];
+  // Leading empty slots
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    calendarDays.push({ isEmpty: true, id: `empty-${i}` });
+  }
+  // Month days
+  for (let d = 1; d <= daysInCalendarMonth; d++) {
+    const dayStr = String(d).padStart(2, '0');
+    const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${dayStr}`;
+    const dayExps = expenses.filter(e => e.date === dateStr);
+    const dayTotalSpent = dayExps.reduce((s, e) => s + e.amount, 0);
+    const dayLimit = dailySalaries[dateStr] !== undefined ? dailySalaries[dateStr] : (parseFloat(defaultDailyIncome) || 0);
+    
+    let status = 'NEUTRAL';
+    if (dayTotalSpent > 0) {
+      if (dayLimit <= 0 || dayTotalSpent > dayLimit) {
+        status = 'DANGER';
+      } else if (dayTotalSpent >= dayLimit * 0.85) {
+        status = 'CAUTION';
+      } else {
+        status = 'HEALTHY';
+      }
+    }
+    
+    const isCutoffStartDay = dateStr === cutoffStart;
+    const isCutoffEndDay = dateStr === cutoffEnd;
+    const isInCurrentCutoff = dateStr >= cutoffStart && dateStr <= cutoffEnd;
+    const isPayday = isCutoffEndDay;
+    const hasDebtEvent = debts.some(debt => debt.dueDate === dateStr || (debt.payments || []).some(p => p.date === dateStr));
+    const isToday = dateStr === getTodayString();
+    const isSelected = dateStr === selectedDate;
+    const attStatus = getResolvedStatus(dateStr);
+    const tardyMins = tardyMap[dateStr] || 0;
+    
+    calendarDays.push({
+      isEmpty: false,
+      dayNumber: d,
+      dateStr,
+      dayTotalSpent,
+      dayLimit,
+      status,
+      isCutoffStartDay,
+      isCutoffEndDay,
+      isInCurrentCutoff,
+      attStatus,
+      tardyMins,
+      isPayday,
+      hasDebtEvent,
+      isToday,
+      isSelected,
+      expenseCount: dayExps.length
+    });
+  }
+
+  // Month navigation handlers
+  const handlePrevMonth = () => {
+    if (calendarMonth === 0) {
+      setCalendarMonth(11);
+      setCalendarYear(calendarYear - 1);
+    } else {
+      setCalendarMonth(calendarMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (calendarMonth === 11) {
+      setCalendarMonth(0);
+      setCalendarYear(calendarYear + 1);
+    } else {
+      setCalendarMonth(calendarMonth + 1);
+    }
+  };
+
+  const handleJumpToCurrentMonth = () => {
+    const now = new Date();
+    setCalendarYear(now.getFullYear());
+    setCalendarMonth(now.getMonth());
+  };
+
+  // Cut-off Statement Computations
+  const cutoffExpenses = expenses.filter(e => e.date >= cutoffStart && e.date <= cutoffEnd);
+  const cutoffExpensesTotal = cutoffExpenses.reduce((s, e) => s + e.amount, 0);
+  const cutoffDebtPayments = cutoffExpenses.filter(e => e.debtPaymentId || e.name.toLowerCase().startsWith('loan/debt pay:'));
+  const cutoffDebtsTotal = cutoffDebtPayments.reduce((s, e) => s + e.amount, 0);
+  const cutoffNetFreeCash = calculatedCutoffSalary - cutoffExpensesTotal;
+
   const showSalaryCard = activeTab === 'ALL' || activeTab === 'SALARY';
   const showDailyCard = activeTab === 'ALL' || activeTab === 'DAILY';
   const showExpenseForm = activeTab === 'ALL' || activeTab === 'EXPENSES' || activeTab === 'DAILY';
   const showExpenseList = activeTab === 'ALL' || activeTab === 'EXPENSES' || activeTab === 'DAILY';
   const showDebtsManager = activeTab === 'DEBTS';
   const showDebtsOverview = activeTab === 'ALL';
+  const showCalendarView = activeTab === 'CALENDAR';
 
   return (
     <SafeAreaView style={[styles.container, theme.container]}>
@@ -970,8 +1145,13 @@ export default function App() {
           </View>
         </View>
 
-        {/* Linear FinTech Segmented Navigation Tabs */}
-        <View style={[styles.segmentedTabBar, theme.segmentBg]}>
+        {/* Linear FinTech Segmented Navigation Tabs (Smooth Horizontal Scroll on Mobile) */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.segmentedTabBar, theme.segmentBg]}
+          style={styles.tabScrollWrapper}
+        >
           <TouchableOpacity
             style={[styles.segmentTab, activeTab === 'ALL' && styles.segmentTabActive]}
             onPress={() => setActiveTab('ALL')}
@@ -1003,6 +1183,16 @@ export default function App() {
           </TouchableOpacity>
 
           <TouchableOpacity
+            style={[styles.segmentTab, activeTab === 'CALENDAR' && styles.segmentTabActive]}
+            onPress={() => setActiveTab('CALENDAR')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.segmentTabText, activeTab === 'CALENDAR' ? styles.segmentTabTextActive : theme.subtext]}>
+              Calendar
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.segmentTab, activeTab === 'EXPENSES' && styles.segmentTabActive]}
             onPress={() => setActiveTab('EXPENSES')}
             activeOpacity={0.8}
@@ -1021,7 +1211,7 @@ export default function App() {
               Debts & Loans{activeDebts.length > 0 ? ` (${activeDebts.length})` : ''}
             </Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
 
         {/* Responsive Grid Layout */}
         <div className="responsive-row">
@@ -1037,10 +1227,16 @@ export default function App() {
                     <BriefcaseIcon size={17} color="#10b981" />
                     <Text style={[styles.cardTitle, theme.text]}>Cut-off Salary Calculator</Text>
                   </View>
-                  <TouchableOpacity style={styles.attendanceBtn} onPress={() => setShowAttendanceModal(true)} activeOpacity={0.85}>
-                    <CalendarIcon size={14} color="#ffffff" style={{ marginRight: 5 }} />
-                    <Text style={styles.attendanceBtnText}>Attendance</Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <TouchableOpacity style={[styles.presetPill, theme.btnBg, { flexDirection: 'row', alignItems: 'center', gap: 4 }]} onPress={() => setShowReportModal(true)} activeOpacity={0.85}>
+                      <FileTextIcon size={13} color="#10b981" />
+                      <Text style={[styles.presetPillText, { color: '#10b981', fontWeight: '800' }]}>Statement</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.attendanceBtn} onPress={() => setShowAttendanceModal(true)} activeOpacity={0.85}>
+                      <CalendarIcon size={14} color="#ffffff" style={{ marginRight: 5 }} />
+                      <Text style={styles.attendanceBtnText}>Attendance</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {/* 1-TAP CUT-OFF PRESETS */}
@@ -1117,6 +1313,70 @@ export default function App() {
                   </View>
                 </View>
 
+                {/* Pending Payout / Finance Addition Input */}
+                <View style={styles.inputGroup}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={[styles.inputLabel, theme.subtext]}>
+                      Pending Payout / Finance Addition (+₱)
+                    </Text>
+                    {additionalPayoutAmount > 0 && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setPendingPayout('0');
+                          setPendingPayoutNote('');
+                          saveData(dailySalaries, expenses, isDark, attendanceMap, { pendingPayout: '0', pendingPayoutNote: '' });
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={{ fontSize: 11, color: '#f43f5e', fontWeight: '700' }}>Clear (₱0)</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    <TextInput
+                      style={[styles.fintechTextInput, theme.inputBg, theme.text, { flex: 1 }]}
+                      value={pendingPayout}
+                      onChangeText={(val) => {
+                        const sanitized = val.replace(/[^0-9.]/g, '');
+                        setPendingPayout(sanitized);
+                        saveData(dailySalaries, expenses, isDark, attendanceMap, { pendingPayout: sanitized });
+                      }}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                    />
+                    <TextInput
+                      style={[styles.fintechTextInput, theme.inputBg, theme.text, { flex: 1.5 }]}
+                      value={pendingPayoutNote}
+                      onChangeText={(val) => {
+                        setPendingPayoutNote(val);
+                        saveData(dailySalaries, expenses, isDark, attendanceMap, { pendingPayoutNote: val });
+                      }}
+                      placeholder="Note: e.g. Pending from Finance"
+                      placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                    />
+                  </View>
+
+                  {/* 1-Tap Quick Addition Preset Pills */}
+                  <View style={[styles.presetPillsRow, { marginTop: 4 }]}>
+                    {['200', '500', '1000', '1500'].map((amt) => (
+                      <TouchableOpacity
+                        key={amt}
+                        style={[styles.presetPill, theme.inputBg, pendingPayout === amt && styles.debtFilterActive, { paddingVertical: 3, paddingHorizontal: 8 }]}
+                        onPress={() => {
+                          setPendingPayout(amt);
+                          saveData(dailySalaries, expenses, isDark, attendanceMap, { pendingPayout: amt });
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.presetPillText, pendingPayout === amt ? styles.debtFilterActiveText : theme.text, { fontSize: 10 }]}>
+                          +₱{amt}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
                 {/* Date Restriction Warning */}
                 {isDateRangeInvalid && (
                   <View style={styles.dangerAlertBox}>
@@ -1145,15 +1405,16 @@ export default function App() {
 
                     <View style={styles.salaryBreakdownStrip}>
                       <Text style={styles.breakdownMuted}>
-                        Gross: {formatPeso(grossCutoffSalary)}
+                        Base: {formatPeso(baseCutoffPay)}
                       </Text>
-                      {totalTardyMinutes > 0 ? (
+                      {additionalPayoutAmount > 0 && (
+                        <Text style={{ color: '#10b981', fontWeight: '800', fontSize: 11 }}>
+                          • +Addition: +{formatPeso(additionalPayoutAmount)} {pendingPayoutNote ? `(${pendingPayoutNote})` : ''}
+                        </Text>
+                      )}
+                      {totalTardyMinutes > 0 && (
                         <Text style={styles.breakdownTardy}>
                           • Tardy: -{formatPeso(totalTardyDeduction)} ({totalTardyMinutes}m)
-                        </Text>
-                      ) : (
-                        <Text style={styles.breakdownMuted}>
-                          • Base: {formatPeso(userMonthly / 2)}
                         </Text>
                       )}
                     </View>
@@ -1325,7 +1586,7 @@ export default function App() {
                             <View style={styles.debtMiniLeft}>
                               <Text style={{ fontSize: 16 }}>{catObj.icon}</Text>
                               <View style={{ flex: 1 }}>
-                                <Text style={[styles.expName, theme.text]}>{debt.title}</Text>
+                                <Text style={[styles.expName, theme.text]} numberOfLines={1}>{debt.title}</Text>
                                 <Text style={[styles.expDate, theme.subtext]}>
                                   Bal: {formatPeso(remAmt)} ({Math.round((paidAmt / debt.totalAmount) * 100)}% paid)
                                 </Text>
@@ -1545,7 +1806,7 @@ export default function App() {
                           <ReceiptIcon size={15} color="#f43f5e" />
                         </View>
                         <View style={styles.expenseDetails}>
-                          <Text style={[styles.expName, theme.text]}>{item.name}</Text>
+                          <Text style={[styles.expName, theme.text]} numberOfLines={1}>{item.name}</Text>
                           <Text style={[styles.expDate, theme.subtext]}>{item.date}</Text>
                         </View>
                       </View>
@@ -1575,6 +1836,283 @@ export default function App() {
                     <Text style={styles.clearBtnText}>Clear Date</Text>
                   </TouchableOpacity>
                 </View>
+              </View>
+            )}
+
+            {/* FEATURE 4: FINANCIAL CALENDAR & BUDGET HEATMAP (CALENDAR TAB) */}
+            {showCalendarView && (
+              <View style={[styles.fintechCard, theme.card]}>
+                <View style={styles.cardHeaderFlex}>
+                  <View style={styles.headerIconGroup}>
+                    <CalendarIcon size={18} color="#10b981" />
+                    <View>
+                      <Text style={[styles.cardTitle, theme.text]}>Financial Calendar & Heatmap</Text>
+                      <Text style={[styles.mainSubtitle, theme.subtext]}>
+                        Tap any date to inspect & log daily budget
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <TouchableOpacity style={[styles.dateNavArrow, theme.btnBg, { width: 34, height: 34 }]} onPress={handlePrevMonth} activeOpacity={0.7}>
+                      <ChevronLeftIcon size={13} color={iconColor} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.presetPill, theme.inputBg, { paddingHorizontal: 10, paddingVertical: 5 }]} onPress={handleJumpToCurrentMonth} activeOpacity={0.7}>
+                      <Text style={[styles.presetPillText, theme.text, { fontSize: 11, fontWeight: '800' }]}>{calendarMonthName}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.dateNavArrow, theme.btnBg, { width: 34, height: 34 }]} onPress={handleNextMonth} activeOpacity={0.7}>
+                      <ChevronRightIcon size={13} color={iconColor} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Active Cut-off Indicator Banner & Auto-Calculated Cut-off Pay */}
+                <View style={[styles.presetSection, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.09)' : 'rgba(16, 185, 129, 0.08)', padding: 10, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.25)', gap: 8 }]}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <BriefcaseIcon size={14} color="#10b981" />
+                      <Text style={[{ fontSize: 12, fontWeight: '700' }, theme.text]}>
+                        Current Cut-off: <Text style={{ color: '#10b981', fontWeight: '900' }}>{cutoffStart}</Text> ➔ <Text style={{ color: '#f59e0b', fontWeight: '900' }}>{cutoffEnd}</Text>
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.presetPill, { backgroundColor: '#10b981', paddingVertical: 4, paddingHorizontal: 8 }]}
+                      onPress={() => {
+                        try {
+                          const [y, m] = cutoffStart.split('-').map(Number);
+                          setCalendarYear(y);
+                          setCalendarMonth(m - 1);
+                        } catch (e) {}
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: '800' }}>Jump to Cut-off Month</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Compact Auto-Calculated Cut-off Pay Pill */}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.7)', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', flexWrap: 'wrap', gap: 6 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <Text style={{ fontSize: 9.5, fontWeight: '800', color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Cut-off Pay:
+                      </Text>
+                      <Text className="fintech-mono" style={{ fontSize: 14, fontWeight: '900', color: '#10b981' }}>
+                        {formatPeso(calculatedCutoffSalary)}
+                      </Text>
+                      {additionalPayoutAmount > 0 && (
+                        <span style={{ fontSize: 9, fontWeight: 800, color: '#10b981', backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.15)', padding: '1px 5px', borderRadius: 4, display: 'inline-flex', alignItems: 'center' }}>
+                          +{formatPeso(additionalPayoutAmount)} {pendingPayoutNote ? `(${pendingPayoutNote})` : 'Addition'}
+                        </span>
+                      )}
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <View style={[styles.workdaysPill, { paddingVertical: 2, paddingHorizontal: 6 }]}>
+                        <Text style={[styles.workdaysPillText, { fontSize: 9.5 }]}>
+                          {totalAttendedDays} Workdays
+                        </Text>
+                      </View>
+                      {totalTardyDeduction > 0 && (
+                        <Text style={[styles.breakdownTardy, { fontSize: 9.5 }]}>
+                          Tardy: -{formatPeso(totalTardyDeduction)}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                {/* Heatmap & Attendance Legend Bar */}
+                <View style={[styles.calendarLegendRow, { gap: 6 }]}>
+                  <View style={styles.legendItem}>
+                    <Text style={{ fontSize: 10 }}>🚀</Text>
+                    <Text style={[styles.legendText, { color: '#10b981', fontWeight: '800' }]}>Start Date</Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <Text style={{ fontSize: 10 }}>💰</Text>
+                    <Text style={[styles.legendText, { color: '#f59e0b', fontWeight: '800' }]}>End Date</Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.attStatusPill, styles.statusPillFull, { paddingHorizontal: 6, paddingVertical: 2 }]}>
+                      <Text style={[styles.attStatusPillText, { fontSize: 9 }]}>Full (1.0x)</Text>
+                    </View>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.attStatusPill, styles.statusPillHalf, { paddingHorizontal: 6, paddingVertical: 2 }]}>
+                      <Text style={[styles.attStatusPillText, { fontSize: 9, color: '#f59e0b' }]}>Half (0.5x)</Text>
+                    </View>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.attStatusPill, styles.statusPillHoliday, { paddingHorizontal: 6, paddingVertical: 2 }]}>
+                      <Text style={[styles.attStatusPillText, styles.statusHolidayText, { fontSize: 9 }]}>Holiday (0x)</Text>
+                    </View>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.attStatusPill, styles.statusPillAbsent, { paddingHorizontal: 6, paddingVertical: 2 }]}>
+                      <Text style={[styles.attStatusPillText, { fontSize: 9, color: '#f43f5e' }]}>Absent (0x)</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Calendar 7-Day Header */}
+                <View style={styles.calendarGridWeekHeader}>
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
+                    <Text key={d} style={[styles.calendarDayHeaderCell, (i === 0 || i === 6) ? { color: '#f59e0b' } : theme.subtext]}>
+                      {d}
+                    </Text>
+                  ))}
+                </View>
+
+                {/* Calendar Days 7xN Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 5, width: '100%' }}>
+                  {calendarDays.map((item) => {
+                    if (item.isEmpty) {
+                      return <div key={item.id} style={{ minHeight: 74, opacity: 0 }} />;
+                    }
+
+                    const statusBg = item.isCutoffStartDay
+                      ? (isDark ? 'rgba(16, 185, 129, 0.22)' : 'rgba(16, 185, 129, 0.18)')
+                      : item.isCutoffEndDay
+                      ? (isDark ? 'rgba(245, 158, 11, 0.22)' : 'rgba(245, 158, 11, 0.18)')
+                      : item.isInCurrentCutoff
+                      ? (item.status === 'DANGER'
+                          ? (isDark ? 'rgba(244, 63, 94, 0.2)' : 'rgba(244, 63, 94, 0.16)')
+                          : item.status === 'CAUTION'
+                          ? (isDark ? 'rgba(245, 158, 11, 0.18)' : 'rgba(245, 158, 11, 0.16)')
+                          : (isDark ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.08)'))
+                      : item.status === 'HEALTHY'
+                      ? (isDark ? 'rgba(16, 185, 129, 0.10)' : 'rgba(16, 185, 129, 0.06)')
+                      : item.status === 'CAUTION'
+                      ? (isDark ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.10)')
+                      : item.status === 'DANGER'
+                      ? (isDark ? 'rgba(244, 63, 94, 0.15)' : 'rgba(244, 63, 94, 0.12)')
+                      : (isDark ? '#0c121e' : '#f8fafc');
+
+                    const borderColor = item.isSelected
+                      ? '#10b981'
+                      : item.isCutoffStartDay
+                      ? '#10b981'
+                      : item.isCutoffEndDay
+                      ? '#f59e0b'
+                      : item.isInCurrentCutoff
+                      ? (isDark ? 'rgba(16, 185, 129, 0.45)' : 'rgba(16, 185, 129, 0.4)')
+                      : item.isToday
+                      ? '#3b82f6'
+                      : (isDark ? 'rgba(255,255,255,0.06)' : '#e2e8f0');
+
+                    const borderWidth = (item.isSelected || item.isCutoffStartDay || item.isCutoffEndDay) ? '2px' : item.isInCurrentCutoff ? '1.5px' : '1px';
+
+                    return (
+                      <div
+                        key={item.dateStr}
+                        onClick={() => {
+                          setSelectedDate(item.dateStr);
+                          setExpenseDate(item.dateStr);
+                        }}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          padding: '5px 4px',
+                          minHeight: 74,
+                          borderRadius: 8,
+                          border: `${borderWidth} solid ${borderColor}`,
+                          backgroundColor: statusBg,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          position: 'relative'
+                        }}
+                      >
+                        {/* Day Top Row */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, fontWeight: (item.isToday || item.isCutoffStartDay || item.isCutoffEndDay) ? 900 : 700, color: item.isToday ? '#3b82f6' : (isDark ? '#f8fafc' : '#0f172a') }}>
+                            {item.dayNumber}
+                          </span>
+                          <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                            {item.tardyMins > 0 && (
+                              <span title={`Tardy: ${item.tardyMins}m`} style={{ fontSize: 7.5, color: '#f59e0b', fontWeight: 800 }}>
+                                ⏱️{item.tardyMins}m
+                              </span>
+                            )}
+                            {item.hasDebtEvent && <span title="Debt Event" style={{ fontSize: 9 }}>💳</span>}
+                          </div>
+                        </div>
+
+                        {/* Cut-off & Attendance Indicator Badges */}
+                        <div style={{ margin: '2px 0', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          {item.isCutoffStartDay && (
+                            <span style={{
+                              fontSize: 7,
+                              fontWeight: 900,
+                              backgroundColor: '#10b981',
+                              color: '#ffffff',
+                              borderRadius: 4,
+                              padding: '1px 2px',
+                              textAlign: 'center',
+                              lineHeight: 1.1,
+                              display: 'block'
+                            }}>
+                              🚀 START
+                            </span>
+                          )}
+                          {item.isCutoffEndDay && (
+                            <span style={{
+                              fontSize: 7,
+                              fontWeight: 900,
+                              backgroundColor: '#f59e0b',
+                              color: '#ffffff',
+                              borderRadius: 4,
+                              padding: '1px 2px',
+                              textAlign: 'center',
+                              lineHeight: 1.1,
+                              display: 'block'
+                            }}>
+                              💰 END / PAY
+                            </span>
+                          )}
+
+                          {/* Attendance Status Badge */}
+                          <span style={{
+                            fontSize: 6.5,
+                            fontWeight: 800,
+                            borderRadius: 3,
+                            padding: '1px 2px',
+                            textAlign: 'center',
+                            lineHeight: 1.1,
+                            display: 'block',
+                            backgroundColor:
+                              item.attStatus === 'FULL' || item.attStatus === 'SAT_FULL' ? (isDark ? 'rgba(16, 185, 129, 0.22)' : 'rgba(16, 185, 129, 0.16)') :
+                              item.attStatus === 'HALF' ? (isDark ? 'rgba(245, 158, 11, 0.22)' : 'rgba(245, 158, 11, 0.18)') :
+                              item.attStatus === 'SPECIAL_HOLIDAY' ? (isDark ? 'rgba(168, 85, 247, 0.25)' : 'rgba(168, 85, 247, 0.2)') :
+                              item.attStatus === 'REST_DAY' ? (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)') :
+                              (isDark ? 'rgba(244, 63, 94, 0.25)' : 'rgba(244, 63, 94, 0.2)'),
+                            color:
+                              item.attStatus === 'FULL' || item.attStatus === 'SAT_FULL' ? '#10b981' :
+                              item.attStatus === 'HALF' ? '#f59e0b' :
+                              item.attStatus === 'SPECIAL_HOLIDAY' ? '#c084fc' :
+                              item.attStatus === 'REST_DAY' ? (isDark ? '#64748b' : '#94a3b8') :
+                              '#f43f5e'
+                          }}>
+                            {item.attStatus === 'SAT_FULL' ? 'Sat (1.0x)' :
+                             item.attStatus === 'FULL' ? 'Full (1.0x)' :
+                             item.attStatus === 'HALF' ? 'Half (0.5x)' :
+                             item.attStatus === 'SPECIAL_HOLIDAY' ? 'Holiday (0x)' :
+                             item.attStatus === 'REST_DAY' ? 'Sunday' : 'Absent (0x)'}
+                          </span>
+                        </div>
+
+                        {/* Day Bottom Expense Total */}
+                        <div style={{ marginTop: 1 }}>
+                          {item.dayTotalSpent > 0 ? (
+                            <span className="fintech-mono" style={{ fontSize: 9, fontWeight: 800, color: item.status === 'DANGER' ? '#f43f5e' : item.status === 'CAUTION' ? '#f59e0b' : '#10b981', display: 'block', wordBreak: 'break-all' }}>
+                              -{formatPeso(item.dayTotalSpent)}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 8, color: isDark ? '#475569' : '#94a3b8' }}>—</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </View>
             )}
 
@@ -2621,6 +3159,133 @@ export default function App() {
         </Dialog.Portal>
       </Dialog.Root>
 
+      {/* 8. RADIX UI DIALOG: CUT-OFF PAYSLIP & SUMMARY REPORT MODAL */}
+      <Dialog.Root open={showReportModal} onOpenChange={setShowReportModal}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="radix-dialog-overlay" />
+          <Dialog.Content className={`radix-dialog-content printable-payslip ${!isDark ? 'light-mode-dialog' : ''}`} style={{ maxWidth: 640 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <FileTextIcon size={20} color="#10b981" />
+                <div>
+                  <Dialog.Title style={{ fontSize: 17, fontWeight: 800, color: isDark ? '#f8fafc' : '#0f172a', margin: 0 }}>
+                    Cut-off Financial Statement & Payslip
+                  </Dialog.Title>
+                  <Dialog.Description style={{ fontSize: 11, color: isDark ? '#94a3b8' : '#64748b', margin: '2px 0 0 0' }}>
+                    Statement Period: {cutoffStart} to {cutoffEnd}
+                  </Dialog.Description>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="no-print"
+                onClick={() => setShowReportModal(false)}
+                style={{ background: 'transparent', border: 'none', color: isDark ? '#94a3b8' : '#64748b', fontSize: 18, cursor: 'pointer', padding: 4 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Payslip Header Card */}
+            <View style={[styles.salaryHeroBanner, theme.heroSalaryBg, { padding: 14, gap: 10 }]}>
+              <View style={styles.heroBannerHeader}>
+                <Text style={styles.heroTag}>PAYSLIP SUMMARY</Text>
+                <View style={styles.workdaysPill}>
+                  <Text style={styles.workdaysPillText}>
+                    {totalAttendedDays} Workdays
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 }}>
+                <View>
+                  <Text style={[styles.inputLabel, theme.subtext]}>Net Take-Home Pay</Text>
+                  <Text className="fintech-mono" style={[styles.heroSalaryValue, { fontSize: 24 }]}>
+                    {formatPeso(calculatedCutoffSalary)}
+                  </Text>
+                </View>
+                <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                  {additionalPayoutAmount > 0 && (
+                    <Text style={{ color: '#10b981', fontWeight: '800', fontSize: 12 }}>
+                      + Finance Addition: +{formatPeso(additionalPayoutAmount)}
+                    </Text>
+                  )}
+                  {totalTardyDeduction > 0 && (
+                    <Text style={[styles.breakdownTardy, { fontSize: 12 }]}>
+                      Tardiness: -{formatPeso(totalTardyDeduction)}
+                    </Text>
+                  )}
+                  <Text style={[styles.breakdownMuted, { fontSize: 11 }]}>
+                    Base: {formatPeso(baseCutoffPay)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Financial Health Summary Metric Boxes */}
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <View style={[styles.miniMetricBox, { backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : '#f1f5f9' }]}>
+                <Text style={[styles.miniMetricLabel, theme.subtext]}>Total Cut-off Expenses</Text>
+                <Text className="fintech-mono" style={[styles.miniMetricValue, { color: '#f43f5e', fontSize: 16 }]}>
+                  -{formatPeso(cutoffExpensesTotal)}
+                </Text>
+              </View>
+              <View style={[styles.miniMetricBox, { backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : '#f1f5f9' }]}>
+                <Text style={[styles.miniMetricLabel, theme.subtext]}>Loan Payments in Cut-off</Text>
+                <Text className="fintech-mono" style={[styles.miniMetricValue, { color: '#f59e0b', fontSize: 16 }]}>
+                  {formatPeso(cutoffDebtsTotal)}
+                </Text>
+              </View>
+              <View style={[styles.miniMetricBox, { backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : '#f1f5f9' }]}>
+                <Text style={[styles.miniMetricLabel, theme.subtext]}>Net Free Cash Remaining</Text>
+                <Text className="fintech-mono" style={[styles.miniMetricValue, { color: cutoffNetFreeCash >= 0 ? '#10b981' : '#f43f5e', fontSize: 16 }]}>
+                  {formatPeso(cutoffNetFreeCash)}
+                </Text>
+              </View>
+            </View>
+
+            {/* Category Breakdown in Statement */}
+            <View style={[styles.fintechCard, theme.inputBg, { padding: 12, gap: 8 }]}>
+              <Text style={[styles.cardTitle, theme.text, { fontSize: 13 }]}>Top Spending Breakdown</Text>
+              {categoryBreakdown.length === 0 ? (
+                <Text style={[styles.emptySubtitle, theme.subtext]}>No expenses logged during this cut-off period.</Text>
+              ) : (
+                categoryBreakdown.map(cat => (
+                  <View key={cat.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 13 }}>{cat.icon}</Text>
+                      <Text style={[{ fontSize: 12, fontWeight: '600' }, theme.text]}>{cat.label}</Text>
+                    </View>
+                    <Text className="fintech-mono" style={[{ fontSize: 12, fontWeight: '700' }, theme.text]}>
+                      {formatPeso(cat.total)} ({cat.pct}%)
+                    </Text>
+                  </View>
+                ))
+              )}
+            </View>
+
+            {/* Statement Actions */}
+            <View style={[styles.modalActionsFlex, { justifyContent: 'space-between' }]}>
+              <TouchableOpacity
+                style={[styles.exportBtn, { minWidth: 140 }]}
+                onPress={() => window.print()}
+                activeOpacity={0.85}
+              >
+                <PrinterIcon size={15} color="#ffffff" style={{ marginRight: 6 }} />
+                <Text style={styles.exportBtnText}>Print / Save PDF</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.cancelBtn, theme.btnBg, { minWidth: 90 }]}
+                onPress={() => setShowReportModal(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={theme.text}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
     </SafeAreaView>
   );
 }
@@ -2631,6 +3296,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    paddingBottom: 96,
     maxWidth: 1100,
     width: '100%',
     alignSelf: 'center',
@@ -2641,7 +3307,7 @@ const styles = StyleSheet.create({
   floatingActionBtn: {
     position: 'absolute',
     bottom: 24,
-    right: 24,
+    right: 20,
     width: 54,
     height: 54,
     borderRadius: 27,
@@ -2649,7 +3315,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9980,
-    boxShadow: '0 6px 12px rgba(16, 185, 129, 0.35)',
+    boxShadow: '0 6px 16px rgba(16, 185, 129, 0.4)',
   },
 
   /* Floating Toast Alert */
@@ -2701,9 +3367,11 @@ const styles = StyleSheet.create({
     gap: 10,
     width: '100%',
     marginTop: 8,
+    flexWrap: 'wrap',
   },
   confirmModalCancelBtn: {
     flex: 1,
+    minWidth: 100,
     height: 44,
     borderRadius: 10,
     borderWidth: 1,
@@ -2716,6 +3384,7 @@ const styles = StyleSheet.create({
   },
   confirmModalActionBtn: {
     flex: 1.2,
+    minWidth: 120,
     height: 44,
     borderRadius: 10,
     alignItems: 'center',
@@ -2744,11 +3413,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.07)',
+    gap: 10,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
+    minWidth: 0,
   },
   brandLogoBox: {
     width: 36,
@@ -2759,11 +3431,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(16, 185, 129, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   brandTitleRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 2,
+    flexWrap: 'wrap',
   },
   mainTitle: {
     fontSize: 20,
@@ -2785,6 +3459,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 0,
   },
   themePill: {
     width: 36,
@@ -2796,6 +3471,10 @@ const styles = StyleSheet.create({
   },
 
   /* FinTech Segmented Navigation Tabs */
+  tabScrollWrapper: {
+    width: '100%',
+    maxHeight: 52,
+  },
   segmentedTabBar: {
     flexDirection: 'row',
     padding: 4,
@@ -2803,13 +3482,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.06)',
     gap: 4,
+    alignItems: 'center',
+    minWidth: '100%',
   },
   segmentTab: {
-    flex: 1,
     paddingVertical: 8,
+    paddingHorizontal: 14,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 4,
+    flexShrink: 0,
   },
   segmentTabActive: {
     backgroundColor: '#10b981',
@@ -2843,6 +3527,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    minWidth: 180,
+    flexWrap: 'wrap',
   },
   cardTitle: {
     fontSize: 15,
@@ -2856,6 +3543,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
   },
   attendanceBtnText: {
     color: '#ffffff',
@@ -2905,10 +3593,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   chipsRow: {
     flexDirection: 'row',
     gap: 4,
+    flexWrap: 'wrap',
   },
   amountChip: {
     paddingHorizontal: 7,
@@ -2974,13 +3665,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     outlineWidth: 0,
     width: '100%',
+    boxSizing: 'border-box',
   },
   twoColumnGrid: {
     flexDirection: 'row',
     gap: 10,
+    flexWrap: 'wrap',
   },
   gridColumn: {
     flex: 1,
+    minWidth: 140,
     gap: 6,
   },
   primaryAddBtn: {
@@ -2992,6 +3686,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 4,
     boxShadow: '0 3px 8px rgba(16, 185, 129, 0.2)',
+    paddingHorizontal: 16,
   },
   primaryAddBtnText: {
     color: '#ffffff',
@@ -3011,6 +3706,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   heroTag: {
     fontSize: 10,
@@ -3065,6 +3762,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    flexShrink: 0,
   },
   jumpTodayPill: {
     alignSelf: 'center',
@@ -3099,6 +3797,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   heroBalanceLabel: {
     fontSize: 10,
@@ -3126,9 +3826,11 @@ const styles = StyleSheet.create({
   dualStatRow: {
     flexDirection: 'row',
     gap: 10,
+    flexWrap: 'wrap',
   },
   miniMetricBox: {
     flex: 1,
+    minWidth: 105,
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
     padding: 10,
     borderRadius: 10,
@@ -3166,6 +3868,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 4,
   },
   progressSubLabel: {
     fontSize: 11,
@@ -3212,14 +3916,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.05)',
-    gap: 8,
+    gap: 10,
   },
   expenseLeftCol: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     flex: 1,
-    minWidth: 120,
+    minWidth: 0,
   },
   expenseTagIconBox: {
     width: 32,
@@ -3228,9 +3932,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(244, 63, 94, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   expenseDetails: {
     flex: 1,
+    minWidth: 0,
   },
   expName: {
     fontSize: 14,
@@ -3244,6 +3950,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexShrink: 0,
   },
   expAmount: {
     fontSize: 14,
@@ -3264,9 +3971,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 8,
     gap: 8,
+    flexWrap: 'wrap',
   },
   exportBtn: {
     flex: 1,
+    minWidth: 120,
     height: 40,
     borderRadius: 10,
     backgroundColor: '#10b981',
@@ -3281,6 +3990,7 @@ const styles = StyleSheet.create({
   },
   clearBtn: {
     flex: 1,
+    minWidth: 120,
     height: 40,
     borderRadius: 10,
     borderWidth: 1,
@@ -3318,6 +4028,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
+    flexWrap: 'wrap',
   },
   attHeaderLeft: {
     flexDirection: 'row',
@@ -3325,6 +4036,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
     flex: 1,
+    minWidth: 140,
   },
   attItemDate: {
     fontSize: 13,
@@ -3393,6 +4105,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 10,
     marginTop: 10,
+    flexWrap: 'wrap',
   },
   cancelBtn: {
     paddingHorizontal: 16,
@@ -3401,6 +4114,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 90,
   },
   fintechFooterText: {
     textAlign: 'center',
@@ -3420,6 +4134,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   debtTotalRemainingText: {
     fontSize: 22,
@@ -3459,6 +4175,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     flex: 1,
+    minWidth: 0,
   },
   debtMiniPayBtn: {
     backgroundColor: '#10b981',
@@ -3467,6 +4184,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
   },
   debtMiniPayBtnText: {
     color: '#ffffff',
@@ -3509,12 +4227,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: 10,
+    flexWrap: 'wrap',
   },
   debtHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     flex: 1,
+    minWidth: 160,
     flexWrap: 'wrap',
   },
   debtCategoryEmojiBox: {
@@ -3524,10 +4244,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   debtTitleText: {
     fontSize: 16,
     fontWeight: '800',
+    flexShrink: 1,
   },
   debtSubDateText: {
     fontSize: 11,
@@ -3564,6 +4286,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   debtMainRemainingValue: {
     fontSize: 22,
@@ -3596,6 +4320,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.05)',
     paddingBottom: 6,
+    flexWrap: 'wrap',
+    gap: 6,
   },
   debtHistoryTitle: {
     fontSize: 12,
@@ -3614,6 +4340,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     flex: 1,
+    minWidth: 0,
   },
   debtPaymentIconCircle: {
     width: 20,
@@ -3622,6 +4349,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(16, 185, 129, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   debtPaymentNoteText: {
     fontSize: 12,
@@ -3631,6 +4359,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexShrink: 0,
   },
   debtPaymentAmtText: {
     fontSize: 13,
@@ -3652,6 +4381,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
+    flexShrink: 0,
   },
   checkboxBoxChecked: {
     backgroundColor: '#10b981',
@@ -3660,6 +4390,41 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     flex: 1,
+  },
+  /* Financial Calendar Heatmap */
+  calendarLegendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flexWrap: 'wrap',
+    paddingVertical: 2,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  calendarGridWeekHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  calendarDayHeaderCell: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '800',
   },
   textDanger: {
     color: '#f43f5e',
