@@ -1356,25 +1356,6 @@ export default function App() {
                       placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                     />
                   </View>
-
-                  {/* 1-Tap Quick Addition Preset Pills */}
-                  <View style={[styles.presetPillsRow, { marginTop: 4 }]}>
-                    {['200', '500', '1000', '1500'].map((amt) => (
-                      <TouchableOpacity
-                        key={amt}
-                        style={[styles.presetPill, theme.inputBg, pendingPayout === amt && styles.debtFilterActive, { paddingVertical: 3, paddingHorizontal: 8 }]}
-                        onPress={() => {
-                          setPendingPayout(amt);
-                          saveData(dailySalaries, expenses, isDark, attendanceMap, { pendingPayout: amt });
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.presetPillText, pendingPayout === amt ? styles.debtFilterActiveText : theme.text, { fontSize: 10 }]}>
-                          +₱{amt}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
                 </View>
 
                 {/* Date Restriction Warning */}
